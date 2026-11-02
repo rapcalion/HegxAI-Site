@@ -12,6 +12,9 @@
   --line: rgba(20, 20, 20, 0.1);
   --hairline: #D9D4C9;
   --hairline-dark: rgba(255, 255, 255, 0.12);
+  --grid-line: var(--hairline, #D9D4C9);
+  --grid-line-dark: var(--hairline-dark, rgba(255, 255, 255, 0.12));
+  --grid-square-size: 8px;
 
   /* HEGXAI Sparkle Palette (Sampled from logo) */
   --accent: #5170FF;
@@ -555,6 +558,22 @@ h2, h3 {
   }
   .reveal-inner {
     transform: translateY(0) !important;
+  }
+  .section-h-line,
+  .section-v-line,
+  .section-end-square {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ─── AVANDE SECTION FRAME LINES & END SQUARES ────────────────────────── */
+.section-v-line {
+  display: block;
+}
+@media (max-width: 767px) {
+  .section-v-line {
+    display: none !important;
   }
 }
 

@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import Marquee from "@/components/ui/Marquee";
 import { siteContent } from "@/content/site";
 
@@ -71,14 +72,13 @@ export default function Services() {
   );
 
   return (
-    <section
+    <SectionFrame
       id="services"
-      aria-labelledby="services-title"
+      ariaLabelledby="services-title"
       ref={sectionRef}
+      theme="cream"
       style={{
         background: "var(--bg)",
-        padding: "var(--section-py, 96px) 0",
-        position: "relative",
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)" }}>
@@ -325,6 +325,6 @@ export default function Services() {
           }
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

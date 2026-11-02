@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, FormEvent } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn, Button } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
 
@@ -145,12 +146,12 @@ export default function CTABlock() {
   };
 
   return (
-    <section
+    <SectionFrame
       id="contact"
-      aria-labelledby="contact-title"
+      ariaLabelledby="contact-title"
+      theme="cream"
       style={{
         background: "var(--bg)",
-        padding: "var(--section-py, 96px) 0",
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)" }}>
@@ -667,6 +668,6 @@ export default function CTABlock() {
           border-color: var(--accent-text);
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn, Button } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
@@ -63,13 +64,13 @@ export default function Pricing() {
   };
 
   return (
-    <section
+    <SectionFrame
       id="pricing"
-      aria-labelledby="pricing-title"
+      ariaLabelledby="pricing-title"
       ref={sectionRef}
+      theme="cream"
       style={{
         background: "var(--bg)",
-        padding: "var(--section-py, 96px) 0",
         opacity: 0,
       }}
     >
@@ -672,6 +673,6 @@ export default function Pricing() {
           }
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

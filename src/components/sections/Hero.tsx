@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import HeroWorkflowCard from "./HeroWorkflowCard";
+import GlyphField from "@/components/hero/GlyphField";
 import { Button } from "@/components/ui/shared";
 import { useBooking } from "@/components/ui/BookingProvider";
 import Marquee from "@/components/ui/Marquee";
@@ -48,39 +49,40 @@ export default function Hero() {
       }
 
       // 1. Text entrance & Highlight box clip-path reveal
-      const tl = gsap.timeline({ delay: 0.15 });
+      const isMobile = window.innerWidth < 768;
+      const tl = gsap.timeline({ delay: isMobile ? 0 : 0.08 });
 
       tl.fromTo(
         headlineLine1Ref.current,
         { y: "110%", opacity: 0 },
-        { y: "0%", opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" }
+        { y: "0%", opacity: 1, duration: isMobile ? 0.45 : 0.85, ease: "power4.out", clearProps: "transform" }
       )
         .fromTo(
           headlineLine2Ref.current,
           { y: "110%", opacity: 0 },
-          { y: "0%", opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" },
-          "-=0.7"
+          { y: "0%", opacity: 1, duration: isMobile ? 0.45 : 0.85, ease: "power4.out", clearProps: "transform" },
+          isMobile ? "-=0.35" : "-=0.65"
         )
         .to(
           highlightBoxRef.current,
           {
             clipPath: "inset(0 0% 0 0)",
-            duration: 0.8,
+            duration: isMobile ? 0.45 : 0.75,
             ease: "power3.out",
           },
-          "-=0.4"
+          isMobile ? "-=0.25" : "-=0.35"
         )
         .fromTo(
           subRef.current,
-          { opacity: 0, y: 16 },
-          { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
-          "-=0.4"
+          { opacity: 0, y: isMobile ? 8 : 16 },
+          { opacity: 1, y: 0, duration: isMobile ? 0.35 : 0.55, ease: "power3.out" },
+          isMobile ? "-=0.25" : "-=0.35"
         )
         .fromTo(
           ctaWrapRef.current,
-          { opacity: 0, y: 18 },
-          { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" },
-          "-=0.4"
+          { opacity: 0, y: isMobile ? 10 : 18 },
+          { opacity: 1, y: 0, duration: isMobile ? 0.4 : 0.65, ease: "power3.out" },
+          isMobile ? "-=0.2" : "-=0.35"
         );
 
       // 2. Dashed connector line progressive reveal using mask
@@ -223,7 +225,7 @@ export default function Hero() {
           flexDirection: "column",
           alignItems: "center",
           textAlign: "center",
-          padding: "0 24px",
+          padding: "0 var(--col-pad, 24px)",
         }}
       >
         {/* ─── 3. DASHED CONNECTOR SVG (Wraps subtitle + CTA, does NOT cross headline/highlight box) ─── */}
@@ -442,7 +444,32 @@ export default function Hero() {
               height: "1px",
               background: "rgba(20,20,20,0.25)",
             }}
-          />
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: 0,
+                top: "-3.5px",
+                width: "var(--grid-square-size, 8px)",
+                height: "var(--grid-square-size, 8px)",
+                background: "rgba(20, 20, 20, 0.85)",
+                pointerEvents: "none",
+              }}
+            />
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "-3.5px",
+                width: "var(--grid-square-size, 8px)",
+                height: "var(--grid-square-size, 8px)",
+                background: "rgba(20, 20, 20, 0.85)",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
 
           {/* Strip between lines */}
           <div
@@ -490,98 +517,40 @@ export default function Hero() {
               height: "1px",
               background: "rgba(20,20,20,0.25)",
             }}
-          />
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: 0,
+                top: "-3.5px",
+                width: "var(--grid-square-size, 8px)",
+                height: "var(--grid-square-size, 8px)",
+                background: "rgba(20, 20, 20, 0.85)",
+                pointerEvents: "none",
+              }}
+            />
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "-3.5px",
+                width: "var(--grid-square-size, 8px)",
+                height: "var(--grid-square-size, 8px)",
+                background: "rgba(20, 20, 20, 0.85)",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
         </div>
 
         {/* ─── 6. LIVE WORKFLOW DASHBOARD CARD ─── */}
         <HeroWorkflowCard />
-
-        {/* ─── 8. BIG CROSSHAIR (+) MARK (1px ink, 90px) CENTERED BELOW PANEL ─── */}
-        <div
-          className="hero-crosshair"
-          style={{
-            position: "relative",
-            width: "90px",
-            height: "90px",
-            margin: "36px auto 44px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
-            zIndex: 3,
-          }}
-        >
-          {/* Horizontal arm */}
-          <div
-            style={{
-              position: "absolute",
-              width: "90px",
-              height: "1px",
-              background: "rgba(20,20,20,0.4)",
-            }}
-          />
-          {/* Vertical arm */}
-          <div
-            style={{
-              position: "absolute",
-              width: "1px",
-              height: "90px",
-              background: "rgba(20,20,20,0.4)",
-            }}
-          />
-        </div>
-
-        {/* ─── 5. STATIC HALFTONE BAND (Dots 3px, spacing 9px, two soft arch shapes with ink at 38% opacity, fading at top, with 8 small glyphs) ─── */}
-        <div
-          aria-hidden="true"
-          className="hero-halftone-band"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            height: "240px",
-            pointerEvents: "none",
-            maskImage: "linear-gradient(to top, rgba(0,0,0,1) 35%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 35%, transparent 100%)",
-            zIndex: 1,
-          }}
-        >
-          <svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 1440 240"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            style={{ width: "100%", height: "100%", display: "block" }}
-          >
-            <defs>
-              <pattern id="hero-halftone-pattern" width="9" height="9" patternUnits="userSpaceOnUse">
-                <circle cx="4.5" cy="4.5" r="1.5" fill="#141414" opacity="0.4" />
-              </pattern>
-            </defs>
-            {/* Left large arch/blob shape flanking dashboard */}
-            <path
-              d="M -40 240 L -40 70 C 80 50, 240 40, 360 90 C 470 130, 500 180, 520 240 Z"
-              fill="url(#hero-halftone-pattern)"
-            />
-            {/* Right large arch/blob shape flanking dashboard */}
-            <path
-              d="M 920 240 C 940 180, 970 130, 1080 90 C 1200 40, 1360 50, 1480 70 L 1480 240 Z"
-              fill="url(#hero-halftone-pattern)"
-            />
-            {/* Scattered glyph characters like Avande */}
-            <text x="120" y="115" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">?</text>
-            <text x="260" y="90" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">@</text>
-            <text x="380" y="155" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">?</text>
-            <text x="180" y="175" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">@</text>
-            <text x="1060" y="155" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">@</text>
-            <text x="1180" y="90" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">?</text>
-            <text x="1320" y="115" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">@</text>
-            <text x="1260" y="175" fontFamily="var(--ff-mono, 'IBM Plex Mono', monospace)" fontSize="11" fill="rgba(81, 112, 255, 0.16)" fontWeight="600">?</text>
-          </svg>
-        </div>
       </div>
+
+      {/* ─── 7. ANIMATED GLYPH FIELD BAND (ASCII/dot-matrix with floating chips & crosshair) ─── */}
+      <GlyphField />
 
       {/* ─── 6. MARQUEE STRIP UNDER HERO (11px mono, 40% opacity) ─── */}
       <div
@@ -633,12 +602,6 @@ export default function Hero() {
             gap: 4px !important;
             text-align: center !important;
             justify-content: center !important;
-          }
-          .hero-halftone-band {
-            height: 120px !important;
-          }
-          .hero-crosshair {
-            margin: 16px auto 20px !important;
           }
         }
       `}</style>

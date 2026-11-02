@@ -1,6 +1,15 @@
 // Site content and configuration
 // HARD RULE: Only real data. If empty, components hide the section/block instead of showing fake placeholders.
 
+export interface WhyAutomateStat {
+  value: string;
+  suffix?: string;
+  label: string;
+  source: string;
+  sourceUrl: string;
+  note?: string;
+}
+
 export interface SiteContent {
   logo?: {
     showWordmark: boolean;
@@ -18,6 +27,17 @@ export interface SiteContent {
     howWeWorkTitle: string;
     howWeWorkBody: string;
     ctaLabel: string;
+  };
+  whyAutomate: {
+    headline: string;
+    stats: Array<{
+      value: string;
+      suffix?: string;
+      label: string;
+      source: string;
+      sourceUrl: string;
+      note?: string;
+    }>;
   };
   features: Array<{
     tag: string;
@@ -103,6 +123,40 @@ export const siteContent: SiteContent = {
     howWeWorkTitle: "How we work",
     howWeWorkBody: "We start with a free audit, map what to automate, then build, test and connect it to your stack.",
     ctaLabel: "Book a free audit",
+  },
+  whyAutomate: {
+    headline: "Businesses replacing repetitive workflows with AI — and the fastest teams are already ahead.",
+    stats: [
+      {
+        value: "15",
+        suffix: "%",
+        label: "of day-to-day work decisions will be made autonomously by agentic AI by 2028 (Gartner prediction)",
+        source: "Gartner",
+        sourceUrl: "https://www.gartner.com/en/articles/ai-agents-pc1",
+        note: "Gartner figure is a forecast.",
+      },
+      {
+        value: "22",
+        suffix: "%",
+        label: "of respondents at smaller organizations are scaling AI agents in at least one business function",
+        source: "McKinsey, The state of AI in 2026",
+        sourceUrl: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai",
+      },
+      {
+        value: "40",
+        suffix: "%",
+        label: "of respondents at large organizations (over $1B revenue) are scaling AI agents in at least one business function",
+        source: "McKinsey, The state of AI in 2026",
+        sourceUrl: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai",
+      },
+      {
+        value: "9",
+        suffix: " in 10",
+        label: "respondents report regular use of AI in at least one business function",
+        source: "McKinsey, The state of AI in 2026",
+        sourceUrl: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai",
+      },
+    ],
   },
   features: [
     {

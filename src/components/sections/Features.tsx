@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
 import FeatureVisual from "./FeatureVisual";
 import { siteContent } from "@/content/site";
@@ -152,15 +153,15 @@ export default function Features() {
   };
 
   return (
-    <section
+    <SectionFrame
       id="features"
-      aria-labelledby="features-title"
+      ariaLabelledby="features-title"
       ref={sectionRef}
+      theme="cream"
+      paddingTop="var(--section-py, 96px)"
+      paddingBottom="40px"
       style={{
         background: "var(--bg)",
-        paddingTop: "var(--section-py, 96px)",
-        paddingBottom: "40px",
-        position: "relative",
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)", width: "100%" }}>
@@ -717,6 +718,6 @@ export default function Features() {
           </div>
         </div>
       </SectionColumn>
-    </section>
+    </SectionFrame>
   );
 }

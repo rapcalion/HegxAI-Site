@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, StickyTag } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
@@ -144,15 +145,13 @@ export default function About() {
   }, []);
 
   return (
-    <section
+    <SectionFrame
       id="about"
-      aria-labelledby="about-title"
+      ariaLabelledby="about-title"
       ref={sectionRef}
+      theme="cream"
       style={{
         background: "var(--bg, #F4EFE6)",
-        position: "relative",
-        width: "100%",
-        padding: "var(--section-py, 96px) 0",
       }}
     >
       {/* ─── TOP LOGO STRIP (rendered ONLY if logos array has items) ─── */}
@@ -191,8 +190,6 @@ export default function About() {
           width: "100%",
           margin: "0 auto",
           position: "relative",
-          borderLeft: "1px solid rgba(20,20,20,0.25)",
-          borderRight: "1px solid rgba(20,20,20,0.25)",
           padding: "0 var(--col-pad, 24px)",
         }}
       >
@@ -490,6 +487,6 @@ export default function About() {
           }
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

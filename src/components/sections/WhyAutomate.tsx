@@ -1,127 +1,172 @@
 "use client";
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { SectionBar, SectionColumn, Button, StickyTag } from "@/components/ui/shared";
+import { SectionBar, SectionColumn, StickyTag } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 import { useBooking } from "@/components/ui/BookingProvider";
 import AsciiHalftoneCanvas from "@/components/ui/AsciiHalftoneCanvas";
+import StarShape from "@/components/ui/StarShape";
+import { siteContent, type WhyAutomateStat } from "@/content/site";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const WHY_ITEMS = [
-  {
-    phrase: "LESS MANUAL WORK",
-    copy: "Remove the repetitive, error-prone tasks that consume your team's time. Free them to focus on the work that actually moves the business forward.",
-  },
-  {
-    phrase: "FEWER ERRORS",
-    copy: "Automation follows rules precisely, every time. Eliminate data entry mistakes, missed steps, and inconsistent handoffs between tools and people.",
-  },
-  {
-    phrase: "FASTER TEAMS",
-    copy: "When processes run automatically, decisions happen in real-time. Your team acts faster, responds sooner, and closes more with less effort.",
-  },
-];
+function getAriaLabel(value: string, suffix?: string): string {
+  if (!suffix) return value;
+  const s = suffix.trim();
+  if (s === "%") return `${value} percent`;
+  return `${value} ${s}`;
+}
 
 export default function WhyAutomate() {
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
   const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const bigNumberRef = useRef<HTMLSpanElement>(null);
+  const stairNumberRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  const whyData = siteContent.whyAutomate;
+  const stats: WhyAutomateStat[] = whyData?.stats || [];
+  const stat1 = stats[0];
+  const staircaseStats = stats.slice(1);
+
+  // Dynamic footnote sources calculation (unique sources with proper URL and forecast flags)
+  const seenSources = new Set<string>();
+  const footnoteSources: Array<{ name: string; url: string; hasForecast?: boolean }> = [];
+  let forecastNote = "";
+
+  stats.forEach((s) => {
+    const isForecast = s.label.toLowerCase().includes("prediction") || !!s.note;
+    if (s.note && !forecastNote) {
+      forecastNote = s.note;
+    } else if (isForecast && !forecastNote) {
+      forecastNote = "Gartner figure is a forecast.";
+    }
+
+    if (!seenSources.has(s.source)) {
+      seenSources.add(s.source);
+      footnoteSources.push({
+        name: s.source,
+        url: s.sourceUrl,
+        hasForecast: isForecast,
+      });
+    }
+  });
 
   useGSAP(
     () => {
+      if (!stats || stats.length === 0) return;
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
 
-      // Headline entrance
-      if (headlineRef.current) {
-        gsap.fromTo(
-          headlineRef.current,
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.9,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: headlineRef.current,
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
+      if (!prefersReduced) {
+        gsap.set(".why-stair-col-inner", { y: 40, opacity: 0 });
+        gsap.set(".why-stair-line", { scaleY: 0, transformOrigin: "top" });
+        if (bigNumberRef.current) bigNumberRef.current.textContent = "0";
+        stairNumberRefs.current.forEach((el) => {
+          if (el) el.textContent = "0";
+        });
       }
 
-      // The 3 big stat phrases reveal
-      if (gridRef.current) {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: gridRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        });
-
-        tl.fromTo(
-          ".why-phrase",
-          { y: "110%" },
-          {
-            y: "0%",
-            duration: 1,
-            ease: "power3.out",
-            stagger: 0.1,
+      // When the block enters (top 70%), numbers count up from 0 to their value (1.2s, power3.out, tabular-nums)
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: "top 70%",
+        once: true,
+        onEnter: () => {
+          // 1. Big Stat (#1) count-up: counts up first
+          const s1Target = parseInt(stat1.value, 10);
+          if (!isNaN(s1Target)) {
+            const s1Obj = { val: 0 };
+            gsap.to(s1Obj, {
+              val: s1Target,
+              duration: 1.2,
+              ease: "power3.out",
+              onUpdate: () => {
+                if (bigNumberRef.current) {
+                  bigNumberRef.current.textContent = Math.round(s1Obj.val).toString();
+                }
+              },
+            });
           }
-        )
-          .fromTo(
-            ".why-line",
-            { scaleX: 0 },
+
+          // 2. Staircase columns rise from +40px with opacity 0 -> 1, staggered 0.12s
+          gsap.fromTo(
+            ".why-stair-col-inner",
+            { y: 40, opacity: 0 },
             {
-              scaleX: 1,
-              transformOrigin: "left",
+              y: 0,
+              opacity: 1,
+              duration: 0.9,
+              ease: "power3.out",
+              stagger: 0.12,
+              delay: 0.1,
+            }
+          );
+
+          // 3. Vertical lines draw downward (scaleY 0 -> 1, origin top, 0.8s)
+          gsap.fromTo(
+            ".why-stair-line",
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              transformOrigin: "top",
               duration: 0.8,
               ease: "power3.out",
-              stagger: 0.1,
-            },
-            "-=0.7"
-          )
-          .fromTo(
-            ".why-copy",
-            { opacity: 0, y: 20 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.7,
-              ease: "power3.out",
-              stagger: 0.1,
-            },
-            "-=0.6"
+              stagger: 0.12,
+              delay: 0.1,
+            }
           );
-      }
+
+          // 4. Staircase numbers count up (staggered with column entrance)
+          staircaseStats.forEach((st, idx) => {
+            const targetVal = parseInt(st.value, 10);
+            if (!isNaN(targetVal)) {
+              const numObj = { val: 0 };
+              const el = stairNumberRefs.current[idx];
+              gsap.to(numObj, {
+                val: targetVal,
+                duration: 1.2,
+                ease: "power3.out",
+                delay: 0.15 + idx * 0.12,
+                onUpdate: () => {
+                  if (el) {
+                    el.textContent = Math.round(numObj.val).toString();
+                  }
+                },
+              });
+            }
+          });
+        },
+      });
     },
     { scope: sectionRef }
   );
 
+  if (!stats || stats.length === 0) {
+    return null;
+  }
+
   return (
-    <section
+    <SectionFrame
       id="why"
-      aria-labelledby="why-title"
+      ariaLabelledby="why-title"
       ref={sectionRef}
+      theme="dark"
+      paddingTop="48px"
+      paddingBottom="var(--section-py, 96px)"
       style={{
-        background: "var(--ink-2)",
-        padding: "48px 0 var(--section-py, 96px) 0",
-        position: "relative",
+        background: "var(--ink-2, #0E1020)",
         overflow: "hidden",
       }}
     >
-      {/* ─── FULL-BLEED ASCII HALFTONE CANVAS (THEME DARK, MASKED TO QUIET UNDER CONTENT) ─── */}
+      {/* ─── FULL-BLEED ASCII HALFTONE CANVAS (RECOLOURED TO --accent-on-dark AT 8-12%) ─── */}
       <AsciiHalftoneCanvas
         theme="dark"
         density="normal"
         interactive={true}
         fontSize={11}
-        color="rgba(255, 255, 255, 0.14)"
+        color="rgba(125, 147, 255, 0.09)"
         accentColor="rgba(125, 147, 255, 0.12)"
         wrapperStyle={{
           position: "absolute",
@@ -139,200 +184,497 @@ export default function WhyAutomate() {
         style={{
           position: "relative",
           zIndex: 1,
-          borderLeftColor: "rgba(255,255,255,0.12)",
-          borderRightColor: "rgba(255,255,255,0.12)",
           padding: "0 var(--col-pad, 24px)",
         }}
       >
+        {/* Same black/cream header bar */}
         <SectionBar label="WHY AUTOMATE" sectionId="why-automate" theme="dark" />
 
-        <div className="why-content-wrap" style={{ paddingTop: "var(--heading-content-gap, 40px)" }}>
-          {/* Header Row: Headline (left) + Right side empty so glyph texture shows at full strength */}
-          <div
-            className="why-header-row"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "48px",
-              alignItems: "end",
-              marginBottom: "var(--heading-content-gap, 40px)",
-            }}
-          >
-            {/* Left: Headline */}
-            <div ref={headlineRef}>
-              <h2
-                id="why-title"
-                style={{
-                  fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
-                  fontSize: "clamp(32px, 3.6vw, 56px)",
-                  fontWeight: 500,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.04,
-                  color: "#ffffff",
-                  maxWidth: "640px",
-                }}
-              >
-                Businesses replacing repetitive workflows with AI — and the fastest teams are already ahead.
+        <div className="why-content-wrap">
+          {/* Main 2-column staircase grid */}
+          <div className="why-main-grid">
+            {/* ─── LEFT COLUMN: Headline + CTA + Big Stat (#1) ─── */}
+            <div className="why-left-col">
+              {/* Section Headline */}
+              <h2 id="why-title" className="why-headline">
+                {whyData.headline || "Businesses replacing repetitive workflows with AI — and the fastest teams are already ahead."}
               </h2>
-            </div>
 
-            {/* Right: Empty space so the ASCII glyph texture shows at full strength */}
-            <div aria-hidden="true" className="hidden md:block" />
-          </div>
+              {/* Sticky-tag CTA + text link */}
+              <div className="why-cta-group">
+                <StickyTag
+                  href={bookingUrl || "#contact"}
+                  onClick={(e) => {
+                    if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                      e.preventDefault();
+                      openBooking();
+                    }
+                  }}
+                  onPointerEnter={preloadBooking}
+                  onFocus={preloadBooking}
+                />
+                <a href="#process" className="why-see-how-link">
+                  <span>See how it works</span>
+                  <span aria-hidden="true">&rarr;</span>
+                </a>
+              </div>
 
-          {/* Three big items */}
-          <div
-            ref={gridRef}
-            className="why-items-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "1px",
-              borderTop: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            {WHY_ITEMS.map((item, i) => (
-              <div
-                key={i}
-                className="why-item-col"
-                style={{
-                  padding: "48px 32px",
-                  borderRight: "1px solid rgba(255,255,255,0.08)",
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                {/* Masked big word (fixed 2-line title block min-height: 84px desktop, single line 28px mobile) */}
-                <div className="why-title-wrap" style={{ overflow: "hidden", marginBottom: "16px", paddingBottom: "0.14em", minHeight: "84px", display: "flex", alignItems: "flex-end" }}>
-                  <div
-                    className="why-phrase"
-                    style={{
-                      fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
-                      fontSize: "40px",
-                      fontWeight: 500,
-                      lineHeight: 1.04,
-                      textTransform: "uppercase",
-                      letterSpacing: "-0.01em",
-                      color: "#ffffff",
-                      transform: "translateY(110%)",
-                    }}
-                  >
-                    {item.phrase}
+              {/* Big Stat (#1): clamp(120px, 14vw, 240px) with gradient text */}
+              <div className="why-big-stat">
+                <div
+                  className="why-stat-value-container"
+                  aria-label={getAriaLabel(stat1.value, stat1.suffix)}
+                >
+                  <span className="sr-only">
+                    {stat1.value}{stat1.suffix}
+                  </span>
+                  <div aria-hidden="true" className="why-big-number-visual">
+                    <span ref={bigNumberRef} className="why-big-number-text">
+                      {stat1.value}
+                    </span>
+                    {stat1.suffix && (
+                      <span className="why-big-number-suffix">
+                        {stat1.suffix}
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                {/* Drawing thin line */}
-                <div
-                  className="why-line"
-                  style={{
-                    height: "1px",
-                    background: "rgba(255,255,255,0.12)",
-                    transform: "scaleX(0)",
-                    transformOrigin: "left",
-                    marginBottom: "24px",
-                  }}
-                />
-
-                {/* Body text rgba(255,255,255,.72), 16px/1.6 */}
-                <p
-                  className="why-copy"
-                  style={{
-                    fontFamily: "var(--ff-body, 'DM Sans', sans-serif)",
-                    fontSize: "16px",
-                    fontWeight: 400,
-                    lineHeight: 1.6,
-                    color: "rgba(255,255,255,0.72)",
-                  }}
-                >
-                  {item.copy}
+                <p className="why-big-stat-label">
+                  {stat1.label}
                 </p>
               </div>
-            ))}
+            </div>
+
+            {/* ─── RIGHT SIDE: Stats #2, #3, #4 RISING STAIRCASE (3 columns) ─── */}
+            <div className="why-staircase-wrap">
+              {staircaseStats.map((stat, idx) => {
+                // Column tops step UP left-to-right by ~80px each (the right-most column #4 is the highest)
+                // idx = 0 (Stat #2): 160px
+                // idx = 1 (Stat #3): 80px
+                // idx = 2 (Stat #4): 0px (highest)
+                const stepOffset = (2 - idx) * 80;
+
+                return (
+                  <div
+                    key={idx}
+                    className={`why-stair-col why-stair-col-${idx + 1}`}
+                    style={{
+                      "--step-offset": `${stepOffset}px`,
+                    } as React.CSSProperties}
+                  >
+                    {/* Thin vertical line from column top to bottom of block */}
+                    <div className="why-stair-line">
+                      {/* 8px star marker at top of vertical line */}
+                      <div className="why-stair-marker">
+                        <StarShape size={8} variant="fill" color="rgba(244, 239, 230, 0.85)" />
+                      </div>
+                    </div>
+
+                    {/* Column Content */}
+                    <div className="why-stair-col-inner">
+                      <div
+                        className="why-stat-value-container"
+                        aria-label={getAriaLabel(stat.value, stat.suffix)}
+                      >
+                        <span className="sr-only">
+                          {stat.value}{stat.suffix}
+                        </span>
+                        <div aria-hidden="true" className="why-stair-num-visual">
+                          <span
+                            ref={(el) => {
+                              stairNumberRefs.current[idx] = el;
+                            }}
+                            className="why-stair-num-text"
+                          >
+                            {stat.value}
+                          </span>
+                          {stat.suffix && (
+                            <span className="why-stair-num-suffix">
+                              {stat.suffix}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="why-stair-label">
+                        {stat.label}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Bottom CTAs: accent tag + secondary button */}
-          <div className="why-ctas-wrap" style={{ marginTop: "64px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
-            <StickyTag
-              href={bookingUrl || "#contact"}
-              onClick={(e) => {
-                if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-                  e.preventDefault();
-                  openBooking();
-                }
-              }}
-              onPointerEnter={preloadBooking}
-              onFocus={preloadBooking}
-            />
-
-            {/* Secondary square outline button in white */}
-            <Button
-              href="#process"
-              variant="secondary"
-              style={{ borderColor: "rgba(255,255,255,0.3)", color: "#ffffff" }}
-            >
-              See how it works
-            </Button>
+          {/* ─── FOOTNOTE ROW: Generated dynamically from stats array ─── */}
+          <div className="why-footnote">
+            <p className="why-footnote-text">
+              <span className="why-footnote-prefix">Sources:</span>
+              {footnoteSources.map((src, i) => (
+                <span key={src.name} className="why-footnote-item">
+                  <a
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="why-source-link"
+                  >
+                    {src.name}
+                    {src.hasForecast ? " (forecast)" : ""}
+                  </a>
+                  {i < footnoteSources.length - 1 ? "; " : "."}
+                </span>
+              ))}
+              {forecastNote && (
+                <span className="why-footnote-note">
+                  {forecastNote}
+                </span>
+              )}
+            </p>
           </div>
         </div>
       </SectionColumn>
 
       <style>{`
+        .why-content-wrap {
+          padding-top: var(--heading-content-gap, 40px);
+        }
+
+        .why-main-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+          gap: 48px;
+          align-items: stretch;
+        }
+
+        .why-left-col {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-width: 0;
+        }
+
+        .why-headline {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-size: clamp(34px, 3.8vw, 54px);
+          font-weight: 500;
+          letter-spacing: -0.02em;
+          line-height: 1.05;
+          color: #ffffff;
+          max-width: 640px;
+          margin: 0;
+          order: 1;
+        }
+
+        .why-cta-group {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+          margin: 36px 0 28px 0;
+          order: 2;
+        }
+
+        .why-see-how-link {
+          font-family: var(--ff-body, 'DM Sans', sans-serif);
+          font-size: 14px;
+          color: rgba(244, 239, 230, 0.85);
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+        .why-see-how-link:hover {
+          color: #ffffff;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+        .why-see-how-link:hover span[aria-hidden="true"] {
+          transform: translateX(3px);
+        }
+
+        .why-big-stat {
+          order: 3;
+          min-width: 0;
+        }
+
+        .why-stat-value-container {
+          display: inline-block;
+          min-width: 0;
+        }
+
+        .why-big-number-visual {
+          display: flex;
+          align-items: flex-start;
+          line-height: 0.88;
+        }
+
+        /* The only gradient text on the page: starts at --accent to ensure >= 4.5:1 contrast across all stops */
+        .why-big-number-text {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-size: clamp(120px, 14vw, 240px);
+          font-weight: 500;
+          letter-spacing: -0.04em;
+          line-height: 0.88;
+          background: linear-gradient(135deg, var(--accent, #5170FF) 0%, var(--accent-on-dark, #7D93FF) 55%, var(--accent-violet, #B368DF) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-variant-numeric: tabular-nums;
+          display: inline-block;
+        }
+
+        .why-big-number-suffix {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-size: clamp(40px, 5vw, 84px);
+          font-weight: 500;
+          letter-spacing: -0.02em;
+          line-height: 1;
+          color: var(--accent-on-dark, #7D93FF);
+          margin-top: 0.08em;
+          margin-left: 2px;
+          display: inline-block;
+        }
+
+        .why-big-stat-label {
+          font-family: var(--ff-body, 'DM Sans', sans-serif);
+          font-size: 16px;
+          line-height: 1.5;
+          color: rgba(244, 239, 230, 0.80);
+          max-width: 440px;
+          margin: 16px 0 0 0;
+        }
+
+        /* ─── RISING STAIRCASE ─── */
+        .why-staircase-wrap {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 28px;
+          align-items: stretch;
+          min-height: 480px;
+        }
+
+        .why-stair-col {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          padding-top: var(--step-offset, 0px);
+          min-width: 0;
+        }
+
+        .why-stair-line {
+          position: absolute;
+          top: var(--step-offset, 0px);
+          bottom: 0;
+          left: 0;
+          width: 1px;
+          background: rgba(244, 239, 230, 0.35);
+          pointer-events: none;
+        }
+
+        .why-stair-marker {
+          position: absolute;
+          top: -4px;
+          left: -3.5px;
+          line-height: 1;
+        }
+
+        .why-stair-col-inner {
+          padding-left: 20px;
+          padding-top: 14px;
+          padding-bottom: 24px;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .why-stair-num-visual {
+          display: flex;
+          align-items: baseline;
+          line-height: 1;
+        }
+
+        .why-stair-num-text {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-size: clamp(60px, 5.2vw, 84px);
+          font-weight: 500;
+          letter-spacing: -0.03em;
+          color: #ffffff;
+          line-height: 1;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .why-stair-num-suffix {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-size: clamp(20px, 1.8vw, 28px);
+          font-weight: 500;
+          letter-spacing: -0.02em;
+          color: rgba(244, 239, 230, 0.85);
+          margin-left: 3px;
+        }
+
+        .why-stair-label {
+          font-family: var(--ff-body, 'DM Sans', sans-serif);
+          font-size: 14.5px;
+          line-height: 1.48;
+          color: rgba(244, 239, 230, 0.80);
+          max-width: 200px;
+          margin: 12px 0 0 0;
+        }
+
+        /* ─── FOOTNOTE ─── */
+        .why-footnote {
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          padding-top: 24px;
+          margin-top: 56px;
+        }
+
+        .why-footnote-text {
+          font-family: var(--ff-mono, 'IBM Plex Mono', monospace);
+          font-size: 12px;
+          color: rgba(244, 239, 230, 0.70);
+          line-height: 1.6;
+          margin: 0;
+        }
+
+        .why-footnote-prefix {
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-right: 6px;
+          color: rgba(244, 239, 230, 0.85);
+        }
+
+        .why-source-link {
+          color: rgba(244, 239, 230, 0.85);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          text-decoration-color: rgba(244, 239, 230, 0.40);
+          transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        }
+        .why-source-link:hover {
+          color: #ffffff;
+          text-decoration-color: #ffffff;
+        }
+
+        .why-footnote-note {
+          margin-left: 14px;
+          color: rgba(244, 239, 230, 0.60);
+        }
+
+        /* ─── TABLET (768px - 1023px) ─── */
+        @media (max-width: 1023px) and (min-width: 768px) {
+          .why-main-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+          }
+          .why-staircase-wrap {
+            min-height: auto;
+            gap: 20px;
+          }
+          .why-stair-col {
+            padding-top: calc(var(--step-offset, 0px) * 0.6);
+          }
+          .why-stair-line {
+            top: calc(var(--step-offset, 0px) * 0.6);
+          }
+        }
+
+        /* ─── MOBILE (<768px) ─── */
         @media (max-width: 767px) {
           .why-content-wrap {
-            padding-top: var(--heading-content-gap, 24px) !important;
+            padding-top: var(--heading-content-gap, 24px);
           }
-          .why-header-row {
-            margin-bottom: var(--heading-content-gap, 24px) !important;
+
+          .why-main-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
           }
-          #why-title {
-            font-size: 30px !important;
-            line-height: 1.08 !important;
+
+          .why-headline {
+            font-size: clamp(28px, 6.8vw, 36px);
+            line-height: 1.08;
+            order: 1;
           }
-          .why-items-grid {
-            grid-template-columns: 1fr !important;
-            gap: 0 !important;
-            border-top: 1px solid rgba(255,255,255,0.12) !important;
+
+          .why-big-stat {
+            order: 2;
+            margin-top: 12px;
           }
-          .why-item-col {
-            padding: 20px 0 !important;
-            border-right: none !important;
-            border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+
+          .why-big-number-text {
+            font-size: clamp(96px, 28vw, 140px);
           }
-          .why-title-wrap {
-            min-height: auto !important;
-            margin-bottom: 6px !important;
+
+          .why-big-number-suffix {
+            font-size: clamp(34px, 10vw, 48px);
           }
-          .why-phrase {
-            font-size: 22px !important;
-            white-space: nowrap !important;
-            line-height: 1.1 !important;
+
+          .why-big-stat-label {
+            font-size: 15px;
+            margin-top: 12px;
           }
-          .why-line {
-            display: none !important;
+
+          .why-cta-group {
+            order: 3;
+            margin: 16px 0 24px 0;
+            width: 100%;
           }
-          .why-copy {
+
+          .why-cta-group .chamfer-tag,
+          .why-cta-group a {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .why-staircase-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            min-height: auto;
+          }
+
+          /* Remove staircase step on mobile: stats stack vertically with left line and star marker */
+          .why-stair-col {
+            padding-top: 0 !important;
+            width: 100%;
+          }
+
+          .why-stair-line {
+            top: 0 !important;
+          }
+
+          .why-stair-col-inner {
+            padding-left: 18px !important;
+            padding-top: 4px !important;
+            padding-bottom: 8px !important;
+          }
+
+          .why-stair-num-text {
+            font-size: 54px !important;
+          }
+
+          .why-stair-num-suffix {
+            font-size: 20px !important;
+          }
+
+          .why-stair-label {
             font-size: 14px !important;
-            line-height: 1.5 !important;
-            display: -webkit-box !important;
-            -webkit-line-clamp: 2 !important;
-            -webkit-box-orient: vertical !important;
-            overflow: hidden !important;
-            margin: 0 !important;
+            max-width: 100% !important;
+            margin-top: 8px !important;
           }
-          .why-ctas-wrap {
-            margin-top: var(--heading-content-gap, 24px) !important;
-            flex-direction: column !important;
-            width: 100% !important;
-            gap: 12px !important;
+
+          .why-footnote {
+            margin-top: 36px;
+            padding-top: 18px;
           }
-          .why-ctas-wrap a,
-          .why-ctas-wrap button,
-          .why-ctas-wrap .chamfer-tag {
-            width: 100% !important;
-            justify-content: center !important;
-            min-height: 52px !important;
+
+          .why-footnote-note {
+            display: block;
+            margin-left: 0;
+            margin-top: 6px;
           }
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

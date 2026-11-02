@@ -41,7 +41,7 @@ export function SectionBar({
   const displayNum = num || number || autoNum;
   const barRef = useRef<HTMLDivElement>(null);
   const isDark = theme === "dark";
-  const shouldShowLine = showLine ?? true;
+  const shouldShowLine = showLine ?? false;
 
   const insetVal = typeof inset === "number" ? `${inset}px` : inset;
   const heightVal = typeof height === "number" ? `${height}px` : height;
@@ -74,7 +74,7 @@ export function SectionBar({
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", marginBottom: mbVal, ...style }}>
+    <div style={{ position: "relative", width: "100%", marginTop: shouldShowLine ? 0 : "12px", marginBottom: mbVal, ...style }}>
       {/* Full-width thin horizontal line with optional square nodes at ends */}
       {shouldShowLine && (
         <div
@@ -188,8 +188,6 @@ export function SectionColumn({
         maxWidth: "1320px",
         margin: "0 auto",
         position: "relative",
-        borderLeft: "1px solid rgba(20,20,20,0.25)",
-        borderRight: "1px solid rgba(20,20,20,0.25)",
         padding: "0 var(--col-pad, 24px)",
         ...style,
       }}

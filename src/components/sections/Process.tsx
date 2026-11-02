@@ -3,6 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
+import SectionFrame from "@/components/ui/SectionFrame";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -101,14 +102,13 @@ export default function Process() {
   const step = STEPS[activeStep];
 
   return (
-    <section
+    <SectionFrame
       id="process"
-      aria-labelledby="process-title"
+      ariaLabelledby="process-title"
       ref={sectionRef}
+      theme="cream"
       style={{
         background: "var(--bg)",
-        padding: "var(--section-py, 96px) 0",
-        position: "relative",
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)", flex: 1, width: "100%" }}>
@@ -521,6 +521,6 @@ export default function Process() {
           }
         }
       `}</style>
-    </section>
+    </SectionFrame>
   );
 }

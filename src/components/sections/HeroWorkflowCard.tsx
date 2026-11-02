@@ -1266,7 +1266,7 @@ export default function HeroWorkflowCard() {
 
         @keyframes hero-feed-slide-in {
           from {
-            opacity: 0;
+            opacity: 0.85;
             transform: translateY(-12px);
           }
           to {
