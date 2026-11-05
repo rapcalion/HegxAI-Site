@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn, Button } from "@/components/ui/shared";
@@ -13,6 +14,7 @@ gsap.registerPlugin(ScrollTrigger);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CTABlock() {
+  const router = useRouter();
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -129,6 +131,11 @@ export default function CTABlock() {
 
       if (res.ok && data?.ok) {
         setStatus("success");
+        try {
+          router.push("/thanks");
+        } catch {
+          // Inline success fallback remains visible if redirect throws
+        }
       } else {
         setStatus("error");
         if (res.status === 429 || data?.error === "rate_limited") {
@@ -159,7 +166,7 @@ export default function CTABlock() {
 
         <div
           ref={cardRef}
-          className="contact-card-wrap p-5 md:p-12"
+          className="contact-card-wrap"
           style={{
             background: "var(--surface)",
             border: "1px solid rgba(20,20,20,0.12)",
@@ -167,6 +174,7 @@ export default function CTABlock() {
             marginTop: "var(--heading-content-gap, 40px)",
             position: "relative",
             boxShadow: "none",
+            overflow: "hidden",
           }}
         >
           <div className="contact-grid">
@@ -246,7 +254,7 @@ export default function CTABlock() {
                       <span
                         style={{
                           fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
-                          fontSize: "17px",
+                          fontSize: "16px",
                           fontWeight: 500,
                           color: "var(--ink)",
                           letterSpacing: "-0.01em",
@@ -258,7 +266,7 @@ export default function CTABlock() {
                     <span
                       style={{
                         fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
-                        fontSize: "11px",
+                        fontSize: "12px",
                         fontWeight: 500,
                         letterSpacing: "0.08em",
                         color: "var(--muted)",
@@ -387,6 +395,25 @@ export default function CTABlock() {
 
                   {/* Hidden timestamp field */}
                   <input type="hidden" name="ts" defaultValue="0" />
+
+                  {/* Path clarity mono line */}
+                  <div
+                    style={{
+                      fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ color: "var(--accent-text)" }}>{"//"}</span>
+                    <span>or send us a message</span>
+                  </div>
 
                   {/* Name field */}
                   <div>
@@ -519,28 +546,35 @@ export default function CTABlock() {
                   >
                     {status === "error" && (
                       <div
+                        role="alert"
                         style={{
-                          background: "rgba(220, 38, 38, 0.08)",
-                          border: "1px solid rgba(220, 38, 38, 0.4)",
+                          background: "rgba(179, 38, 30, 0.08)",
+                          border: "1px solid rgba(179, 38, 30, 0.35)",
                           padding: "10px 14px",
                           fontFamily: "var(--ff-body, 'DM Sans', sans-serif)",
                           fontSize: "13px",
-                          color: "#b91c1c",
+                          color: "#B3261E",
                           lineHeight: 1.4,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "8px",
                         }}
                       >
-                        <div>{errorMessage}</div>
-                        {siteContent.contact.email && (
-                          <div style={{ marginTop: "6px", fontSize: "12px" }}>
-                            Or email us at{" "}
-                            <a
-                              href={`mailto:${siteContent.contact.email}`}
-                              style={{ textDecoration: "underline", color: "inherit", fontWeight: 600 }}
-                            >
-                              {siteContent.contact.email}
-                            </a>
-                          </div>
-                        )}
+                        <span style={{ fontWeight: 700, fontSize: "14px", color: "#B3261E", lineHeight: 1 }}>⚠</span>
+                        <div style={{ color: "#B3261E" }}>
+                          <div>{errorMessage}</div>
+                          {siteContent.contact.email && (
+                            <div style={{ marginTop: "6px", fontSize: "12px", color: "#B3261E" }}>
+                              Or email us at{" "}
+                              <a
+                                href={`mailto:${siteContent.contact.email}`}
+                                style={{ textDecoration: "underline", color: "inherit", fontWeight: 600 }}
+                              >
+                                {siteContent.contact.email}
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -555,9 +589,27 @@ export default function CTABlock() {
                       width: "100%",
                       minHeight: "52px",
                       justifyContent: "center",
+                      cursor: status === "submitting" ? "not-allowed" : "pointer",
                     }}
                   >
-                    {status === "submitting" ? "Sending…" : "Send message"}
+                    {status === "submitting" ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          style={{ animation: "contact-spin 0.8s linear infinite" }}
+                          aria-hidden="true"
+                        >
+                          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+                          <path d="M14 8a6 6 0 0 0-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        <span>Sending…</span>
+                      </span>
+                    ) : (
+                      <span>Send message</span>
+                    )}
                   </Button>
 
                   {/* Under-form notice */}
@@ -584,42 +636,62 @@ export default function CTABlock() {
         .contact-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 36px;
-          align-items: start;
+          gap: 0px;
+          align-items: stretch;
+        }
+        @media (min-width: 900px) {
+          .contact-grid {
+            grid-template-columns: 1.05fr 1fr;
+            gap: 0px;
+            align-items: stretch;
+          }
         }
         .contact-left {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+        @media (min-width: 900px) {
+          .contact-left {
+            padding: 32px;
+            height: 100%;
+          }
+        }
+        .contact-right {
+          padding: 0 20px 20px;
+          box-sizing: border-box;
+        }
+        @media (min-width: 900px) {
+          .contact-right {
+            padding: 32px;
+            height: 100%;
+          }
         }
         .contact-steps-list {
           display: flex;
           flex-direction: column;
+          margin-top: 36px;
+        }
+        @media (min-width: 900px) {
+          .contact-steps-list {
+            margin-top: auto;
+          }
         }
         .contact-step-row {
+          height: 72px;
+          min-height: 72px;
+          max-height: 72px;
+          box-sizing: border-box;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 0;
+          padding: 0 16px;
         }
-        @media (min-width: 900px) {
-          .contact-grid {
-            grid-template-columns: 1.05fr 1fr;
-            gap: 48px;
-            align-items: stretch;
-          }
-          .contact-left {
-            height: 100%;
-          }
-          .contact-steps-list {
-            margin-top: auto;
-            flex: 1;
-            justify-content: space-between;
-            min-height: 200px;
-          }
+        @media (max-width: 767px) {
           .contact-step-row {
-            flex: 1;
-            padding: 0;
+            padding: 0 12px;
           }
         }
         .contact-input {
@@ -639,10 +711,11 @@ export default function CTABlock() {
         .contact-input:hover {
           border-color: rgba(20, 20, 20, 0.5);
         }
+        .contact-input:focus,
         .contact-input:focus-visible {
-          outline: 2px solid var(--accent-text);
-          outline-offset: 2px;
-          border-color: var(--accent-text);
+          outline: 2px solid var(--accent-text) !important;
+          outline-offset: 2px !important;
+          border-color: var(--accent-text) !important;
         }
         .contact-textarea {
           width: 100%;
@@ -662,10 +735,15 @@ export default function CTABlock() {
         .contact-textarea:hover {
           border-color: rgba(20, 20, 20, 0.5);
         }
+        .contact-textarea:focus,
         .contact-textarea:focus-visible {
-          outline: 2px solid var(--accent-text);
-          outline-offset: 2px;
-          border-color: var(--accent-text);
+          outline: 2px solid var(--accent-text) !important;
+          outline-offset: 2px !important;
+          border-color: var(--accent-text) !important;
+        }
+        @keyframes contact-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </SectionFrame>

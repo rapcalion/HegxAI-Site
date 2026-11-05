@@ -1,5 +1,6 @@
 import { saveLead } from "@/lib/leads";
-import { escapeHtml, redactLead } from "@/lib/lead-utils";
+import { redactLead } from "@/lib/lead-utils";
+import { renderLeadNotification, renderLeadAutoReply } from "@/lib/email-templates";
 
 // In-memory rate limiter per IP: best-effort in serverless environments (isolated per lambda instance).
 // Migrate to Upstash / Redis with the future backend for distributed state across instances.
@@ -196,40 +197,13 @@ export async function POST(request: Request) {
   }
 
   // 10. Send email via Resend REST API
-  const subject = `New lead: ${name} (${company || "no company"})`;
-  const textBody = [
-    `New contact lead received:`,
-    `Name: ${name}`,
-    `Work Email: ${email}`,
-    `Company: ${company || "N/A"}`,
-    `Message:`,
+  const { subject, html, text } = renderLeadNotification({
+    name,
+    email,
+    company: company || undefined,
     message,
-    `Submitted At: ${new Date().toISOString()}`,
-  ].join("\n");
-
-  const htmlBody = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #141414;">
-      <h2 style="margin-top: 0; font-size: 20px; border-bottom: 2px solid #141414; padding-bottom: 8px;">New Lead Submission</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-        <tr>
-          <td style="padding: 8px 0; font-weight: 600; width: 120px; color: #666;">Name</td>
-          <td style="padding: 8px 0;">${escapeHtml(name)}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; font-weight: 600; color: #666;">Work Email</td>
-          <td style="padding: 8px 0;"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; font-weight: 600; color: #666;">Company</td>
-          <td style="padding: 8px 0;">${escapeHtml(company || "N/A")}</td>
-        </tr>
-      </table>
-      <div style="margin-top: 20px; padding: 16px; background: #f5f5f5; border-left: 3px solid #141414;">
-        <p style="margin: 0 0 6px 0; font-weight: 600; font-size: 13px; text-transform: uppercase; color: #666;">What they want to automate</p>
-        <p style="margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${escapeHtml(message)}</p>
-      </div>
-    </div>
-  `;
+    createdAt: new Date(),
+  });
 
   try {
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -243,8 +217,8 @@ export async function POST(request: Request) {
         to: toEmail,
         reply_to: email,
         subject,
-        text: textBody,
-        html: htmlBody,
+        text,
+        html,
       }),
     });
 
@@ -257,6 +231,38 @@ export async function POST(request: Request) {
     }
 
     console.info(`[Contact API] Lead email successfully dispatched for ${redactLead(name, email)}`);
+
+    // 11. Optional Auto-Reply to visitor if enabled (isolated try/catch)
+    if (process.env.LEAD_AUTOREPLY === "true") {
+      try {
+        const autoReply = renderLeadAutoReply({
+          name,
+          email,
+          company: company || undefined,
+          message,
+        });
+
+        const replyRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: email,
+            reply_to: toEmail,
+            subject: autoReply.subject,
+            text: autoReply.text,
+            html: autoReply.html,
+          }),
+        });
+
+        console.info(`[Contact API] Auto-reply status code: ${replyRes.status}`);
+      } catch {
+        console.error("[Contact API] Auto-reply network error");
+      }
+    }
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
