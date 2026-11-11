@@ -100,7 +100,25 @@ function drawMorphedStar(ctx: CanvasRenderingContext2D, morph: number) {
   ctx.fill();
 }
 
-export default function GlyphField() {
+export interface GlyphFieldProps {
+  chipCount?: number;
+  desktopHeight?: number;
+  tabletHeight?: number;
+  mobileHeight?: number;
+  marginTop?: string | number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export default function GlyphField({
+  chipCount = 4,
+  desktopHeight = 380,
+  tabletHeight = 300,
+  mobileHeight = 220,
+  marginTop = "-60px",
+  className = "",
+  style: propStyle,
+}: GlyphFieldProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -199,7 +217,7 @@ export default function GlyphField() {
 
     function initGrid() {
       width = container?.clientWidth || window.innerWidth;
-      height = container?.clientHeight || (window.innerWidth < 768 ? 220 : window.innerWidth < 1024 ? 300 : 380);
+      height = container?.clientHeight || (window.innerWidth < 768 ? mobileHeight : window.innerWidth < 1024 ? tabletHeight : desktopHeight);
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
       if (!canvas) return;
@@ -634,39 +652,40 @@ export default function GlyphField() {
       chipTweens.forEach((t) => t.kill());
       if (parallaxTween) parallaxTween.kill();
     };
-  }, []);
+  }, [desktopHeight, mobileHeight, tabletHeight]);
 
   return (
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="glyph-field-band"
+      className={`glyph-field-band ${className}`}
       style={{
         position: "relative",
         width: "100%",
-        marginTop: "-60px",
+        marginTop: typeof marginTop === "number" ? `${marginTop}px` : marginTop,
         overflow: "hidden",
         userSelect: "none",
         zIndex: 2,
         background: "var(--bg, #F4EFE6)",
+        ...propStyle,
       }}
     >
       <style>{`
         .glyph-field-band {
-          height: 380px;
-          min-height: 380px;
+          height: ${desktopHeight}px;
+          min-height: ${desktopHeight}px;
           contain: layout paint;
         }
         @media (max-width: 1023px) {
           .glyph-field-band {
-            height: 300px;
-            min-height: 300px;
+            height: ${tabletHeight}px;
+            min-height: ${tabletHeight}px;
           }
         }
         @media (max-width: 767px) {
           .glyph-field-band {
-            height: 220px;
-            min-height: 220px;
+            height: ${mobileHeight}px;
+            min-height: ${mobileHeight}px;
           }
           .glyph-chip-1 {
             left: 8% !important;
@@ -848,32 +867,34 @@ export default function GlyphField() {
         </svg>
       </div>
 
-      {/* Chip 2: Mail (Hidden on Mobile) */}
-      <div
-        ref={(el) => { chipsRef.current[1] = el; }}
-        className="glyph-chip hidden md:flex"
-        style={{
-          position: "absolute",
-          left: "38%",
-          top: "60%",
-          width: "52px",
-          height: "52px",
-          borderRadius: "var(--r-card, 12px)",
-          background: "var(--ink-2, #0E1020)",
-          border: "1px solid var(--hairline-dark, rgba(255,255,255,0.12))",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--accent-on-dark, #7D93FF)",
-          pointerEvents: "none",
-          zIndex: 4,
-        }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect width="20" height="16" x="2" y="4" rx="2" />
-          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-        </svg>
-      </div>
+      {/* Chip 2: Mail (Hidden on Mobile, hidden if chipCount < 4) */}
+      {chipCount >= 4 && (
+        <div
+          ref={(el) => { chipsRef.current[1] = el; }}
+          className="glyph-chip hidden md:flex"
+          style={{
+            position: "absolute",
+            left: "38%",
+            top: "60%",
+            width: "52px",
+            height: "52px",
+            borderRadius: "var(--r-card, 12px)",
+            background: "var(--ink-2, #0E1020)",
+            border: "1px solid var(--hairline-dark, rgba(255,255,255,0.12))",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--accent-on-dark, #7D93FF)",
+            pointerEvents: "none",
+            zIndex: 4,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </svg>
+        </div>
+      )}
 
       {/* Chip 3: Spreadsheet (Visible on Mobile & Desktop) */}
       <div
@@ -903,31 +924,33 @@ export default function GlyphField() {
         </svg>
       </div>
 
-      {/* Chip 4: Bolt (Hidden on Mobile) */}
-      <div
-        ref={(el) => { chipsRef.current[3] = el; }}
-        className="glyph-chip hidden md:flex"
-        style={{
-          position: "absolute",
-          left: "80%",
-          top: "64%",
-          width: "52px",
-          height: "52px",
-          borderRadius: "var(--r-card, 12px)",
-          background: "var(--ink-2, #0E1020)",
-          border: "1px solid var(--hairline-dark, rgba(255,255,255,0.12))",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--accent-on-dark, #7D93FF)",
-          pointerEvents: "none",
-          zIndex: 4,
-        }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-        </svg>
-      </div>
+      {/* Chip 4: Bolt (Hidden on Mobile, hidden if chipCount < 4) */}
+      {chipCount >= 4 && (
+        <div
+          ref={(el) => { chipsRef.current[3] = el; }}
+          className="glyph-chip hidden md:flex"
+          style={{
+            position: "absolute",
+            left: "80%",
+            top: "64%",
+            width: "52px",
+            height: "52px",
+            borderRadius: "var(--r-card, 12px)",
+            background: "var(--ink-2, #0E1020)",
+            border: "1px solid var(--hairline-dark, rgba(255,255,255,0.12))",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--accent-on-dark, #7D93FF)",
+            pointerEvents: "none",
+            zIndex: 4,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+      )}
 
       {/* ─── CURSOR-FOLLOWING CROSSHAIR (Desktop pointer: fine only) ─── */}
       <div

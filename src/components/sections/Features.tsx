@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
-import FeatureVisual from "./FeatureVisual";
+import FeatureVisualLayered from "./FeatureVisualLayered";
 import { siteContent } from "@/content/site";
 
 export default function Features() {
@@ -13,7 +13,6 @@ export default function Features() {
   const [mobileActive, setMobileActive] = useState(0);
 
   const sectionRef = useRef<HTMLElement>(null);
-  const leftPanelsRef = useRef<(HTMLDivElement | null)[]>([]);
   const rightPanelsRef = useRef<(HTMLDivElement | null)[]>([]);
   const digitsRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -68,12 +67,6 @@ export default function Features() {
 
     if (prefersReduced) {
       // Instant swap: respect prefers-reduced-motion
-      leftPanelsRef.current.forEach((panel, i) => {
-        if (!panel) return;
-        panel.style.opacity = i === targetIdx ? "1" : "0";
-        panel.style.visibility = i === targetIdx ? "visible" : "hidden";
-        panel.style.pointerEvents = i === targetIdx ? "auto" : "none";
-      });
       rightPanelsRef.current.forEach((panel, i) => {
         if (!panel) return;
         panel.style.opacity = i === targetIdx ? "1" : "0";
@@ -88,68 +81,60 @@ export default function Features() {
 
     isTransitioningRef.current = true;
 
-    const outgoingLeft = leftPanelsRef.current[fromIdx];
     const outgoingRight = rightPanelsRef.current[fromIdx];
-    const incomingLeft = leftPanelsRef.current[targetIdx];
     const incomingRight = rightPanelsRef.current[targetIdx];
 
-    // Ensure incoming panels are hidden before starting
-    if (incomingLeft) {
-      gsap.set(incomingLeft, { opacity: 0, visibility: "hidden", pointerEvents: "none" });
-    }
+    // Ensure incoming panel is hidden before starting
     if (incomingRight) {
       gsap.set(incomingRight, { opacity: 0, visibility: "hidden", pointerEvents: "none" });
     }
 
     // Step 1: Outgoing elements fully fade out (~0.2s)
-    const outgoingTargets = [outgoingLeft, outgoingRight].filter(Boolean);
-    gsap.to(outgoingTargets, {
-      opacity: 0,
-      y: -6,
-      duration: 0.2,
-      ease: "power2.in",
-      onComplete: () => {
-        // Outgoing is now 100% invisible
-        outgoingTargets.forEach((el) => {
-          if (el) {
-            el.style.visibility = "hidden";
-            el.style.pointerEvents = "none";
-          }
-        });
+    if (outgoingRight) {
+      gsap.to(outgoingRight, {
+        opacity: 0,
+        y: -6,
+        duration: 0.2,
+        ease: "power2.in",
+        onComplete: () => {
+          outgoingRight.style.visibility = "hidden";
+          outgoingRight.style.pointerEvents = "none";
 
-        // Rolling digits pager transition
-        if (digitsRef.current) {
-          gsap.to(digitsRef.current, {
-            y: -targetIdx * 16,
-            duration: 0.35,
-            ease: "power2.out",
-          });
-        }
-
-        // Step 2: Incoming elements fade in (~0.35s)
-        const incomingTargets = [incomingLeft, incomingRight].filter(Boolean);
-        incomingTargets.forEach((el) => {
-          if (el) {
-            el.style.visibility = "visible";
-            el.style.pointerEvents = "auto";
+          // Rolling digits pager transition
+          if (digitsRef.current) {
+            gsap.to(digitsRef.current, {
+              y: -targetIdx * 16,
+              duration: 0.35,
+              ease: "power2.out",
+            });
           }
-        });
 
-        gsap.fromTo(
-          incomingTargets,
-          { opacity: 0, y: 6 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.35,
-            ease: "power2.out",
-            onComplete: () => {
-              isTransitioningRef.current = false;
-            },
+          // Step 2: Incoming elements fade in (~0.35s)
+          if (incomingRight) {
+            incomingRight.style.visibility = "visible";
+            incomingRight.style.pointerEvents = "auto";
+
+            gsap.fromTo(
+              incomingRight,
+              { opacity: 0, y: 6 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.35,
+                ease: "power2.out",
+                onComplete: () => {
+                  isTransitioningRef.current = false;
+                },
+              }
+            );
+          } else {
+            isTransitioningRef.current = false;
           }
-        );
-      },
-    });
+        },
+      });
+    } else {
+      isTransitioningRef.current = false;
+    }
   };
 
   return (
@@ -165,7 +150,7 @@ export default function Features() {
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)", width: "100%" }}>
-        {/* Section Bar: "THE FEATURES / 002" with no black square handles */}
+        {/* Section Bar: "THE FEATURES / 002" */}
         <SectionBar
           label="THE FEATURES"
           sectionId="features"
@@ -182,8 +167,8 @@ export default function Features() {
               display: "flex",
               overflowX: "auto",
               scrollSnapType: "x mandatory",
-              gap: "12px",
-              paddingBottom: "4px",
+              gap: "16px",
+              paddingBottom: "8px",
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
@@ -200,54 +185,23 @@ export default function Features() {
                   scrollSnapAlign: "start",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "12px",
+                  gap: "14px",
                 }}
               >
-                {/* Visual Card on top (min-height 200px) */}
+                {/* Visual Panel on top (panel height ~340px, right/bottom padding accommodates breakout without horizontal scroll) */}
                 <div
                   style={{
-                    background: "var(--ink-2)",
-                    borderRadius: "var(--r-card, 12px)",
-                    padding: "16px",
-                    minHeight: "200px",
-                    height: "200px",
-                    position: "relative",
-                    overflow: "hidden",
-                    border: "1px solid var(--hairline-dark)",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
+                    paddingRight: "12px",
+                    paddingBottom: "12px",
+                    boxSizing: "border-box",
+                    width: "100%",
                   }}
                 >
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      pointerEvents: "none",
-                      opacity: 1,
-                      maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,0,0,1) 20%, transparent 90%)",
-                      WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,0,0,1) 20%, transparent 90%)",
-                    }}
-                  >
-                    <svg width="100%" height="100%">
-                      <defs>
-                        <pattern id={`card-halftone-m-${i}`} width="10" height="10" patternUnits="userSpaceOnUse">
-                          <circle cx="5" cy="5" r="1.5" fill="var(--accent-on-dark)" opacity="0.12" />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill={`url(#card-halftone-m-${i})`} />
-                    </svg>
-                  </div>
-
-                  <div style={{ flex: 1, minHeight: 0, position: "relative", zIndex: 2 }}>
-                    <FeatureVisual index={i} />
-                  </div>
-
-                  <div style={{ position: "relative", zIndex: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="label-mono" style={{ color: "var(--accent-on-dark)", fontSize: "11px" }}>{item.tag}</span>
-                    <span style={{ fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)", fontSize: "13px", color: "rgba(255,255,255,0.85)" }}>{item.agentType}</span>
-                  </div>
+                  <FeatureVisualLayered
+                    activeIndex={i}
+                    isMobile={true}
+                    slideFeature={item}
+                  />
                 </div>
 
                 {/* Title */}
@@ -346,132 +300,26 @@ export default function Features() {
         <div
           className="features-desktop-grid hidden md:grid"
           style={{
-            display: "grid",
             gridTemplateColumns: "minmax(0, 1.05fr) 1px minmax(0, 1fr)",
             gap: "48px",
             alignItems: "stretch",
           }}
         >
-          {/* Left: dark visual card mockup, stretches to equal height */}
+          {/* Left: Layered visual composition (sunken panel, shared canvas texture, Card A, Card B, Chip) */}
           <div
             style={{
-              background: "var(--ink-2)",
-              borderRadius: "var(--r-card, 12px)",
-              padding: "36px",
-              minHeight: "480px",
               position: "relative",
-              overflow: "hidden",
-              border: "1px solid var(--hairline-dark)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              height: "100%",
+              width: "100%",
+              minHeight: "480px",
+              paddingBottom: "24px",
+              paddingRight: "24px",
+              boxSizing: "border-box",
             }}
           >
-            {/* Halftone pattern inside dark card (static, masked to fade at edges) */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "none",
-                maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,0,0,1) 20%, transparent 90%)",
-                WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,0,0,1) 20%, transparent 90%)",
-                opacity: 1,
-                zIndex: 1,
-              }}
-            >
-              <svg width="100%" height="100%">
-                <defs>
-                  <pattern id="card-halftone-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <circle cx="5" cy="5" r="1.5" fill="var(--accent-on-dark)" opacity="0.12" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#card-halftone-pattern)" />
-              </svg>
-            </div>
-
-            {/* Left feature details container (stacked grid cell for zero transition overlap) */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr",
-                height: "100%",
-                position: "relative",
-                zIndex: 2,
-              }}
-            >
-              {siteContent.features.map((item, i) => (
-                <div
-                  key={i}
-                  ref={(el) => {
-                    leftPanelsRef.current[i] = el;
-                  }}
-                  style={{
-                    gridRow: "1 / 2",
-                    gridColumn: "1 / 2",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    height: "100%",
-                    opacity: i === 0 ? 1 : 0,
-                    visibility: i === 0 ? "visible" : "hidden",
-                    pointerEvents: i === 0 ? "auto" : "none",
-                  }}
-                >
-                  {/* Top: 4 labelled nodes graph */}
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "180px",
-                    }}
-                  >
-                    <FeatureVisual index={i} />
-                  </div>
-
-                  {/* Bottom: Tag and Agent Title */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                      paddingTop: "24px",
-                      borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          letterSpacing: "0.12em",
-                          textTransform: "uppercase",
-                          color: "var(--accent-on-dark)",
-                        }}
-                      >
-                        {item.tag}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
-                        fontSize: "24px",
-                        fontWeight: 500,
-                        letterSpacing: "-0.02em",
-                        color: "#ffffff",
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {item.agentType}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <FeatureVisualLayered
+              activeIndex={activeIdx}
+              isMobile={false}
+            />
           </div>
 
           {/* 1px vertical divider */}

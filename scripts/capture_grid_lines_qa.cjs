@@ -19,52 +19,48 @@ async function capture() {
     deviceScaleFactor: 1,
   });
   const deskPage = await deskContext.newPage();
-  
-  // Track console errors
-  const errors = [];
-  deskPage.on('pageerror', (err) => errors.push(err.message));
-  deskPage.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
-  });
 
   await deskPage.goto('http://localhost:3000', { waitUntil: 'networkidle' });
   await deskPage.waitForTimeout(600);
 
-  // A. Hero strip lines check
-  console.log('Capturing Hero strip lines...');
-  const heroStrip = await deskPage.$('.hero-strip-bar');
-  if (heroStrip) {
-    const heroStripBox = await heroStrip.boundingBox();
-    if (heroStripBox) {
-      await deskPage.screenshot({
-        path: path.join(QA_DIR, 'hero_strip_desktop_1920.png'),
-        clip: {
-          x: 0,
-          y: Math.max(0, heroStripBox.y - 40),
-          width: 1920,
-          height: heroStripBox.height + 80,
-        },
-      });
-      fs.copyFileSync(path.join(QA_DIR, 'hero_strip_desktop_1920.png'), path.join(ARTIFACTS_DIR, 'hero_strip_desktop_1920.png'));
-    }
-  }
+  // Check computed token values
+  const computedTokens = await deskPage.evaluate(() => {
+    const rootStyle = window.getComputedStyle(document.documentElement);
+    const aboutHLine = document.querySelector('#about .section-h-line');
+    const aboutVLine = document.querySelector('#about .section-v-line');
+    const aboutSquare = document.querySelector('#about .section-end-square');
+    const whyHLine = document.querySelector('#why .section-h-line');
+    const whySquare = document.querySelector('#why .section-end-square');
+    const heroLine = document.querySelector('.hero-strip-bar')?.previousElementSibling;
+    const navLine = document.querySelector('.hegxai-desktop-nav-grid div[style*="height: 1px"]');
 
-  // B. About + Features boundary (scroll so About bottom and Features top meet in viewport)
-  console.log('Capturing About + Features boundary...');
+    return {
+      gridLineToken: rootStyle.getPropertyValue('--grid-line').trim(),
+      gridLineDarkToken: rootStyle.getPropertyValue('--grid-line-dark').trim(),
+      gridSquareToken: rootStyle.getPropertyValue('--grid-square').trim(),
+      gridSquareDarkToken: rootStyle.getPropertyValue('--grid-square-dark').trim(),
+      aboutHLineBg: aboutHLine ? window.getComputedStyle(aboutHLine).backgroundColor : null,
+      aboutVLineBg: aboutVLine ? window.getComputedStyle(aboutVLine).backgroundColor : null,
+      aboutSquareBg: aboutSquare ? window.getComputedStyle(aboutSquare).backgroundColor : null,
+      whyHLineBg: whyHLine ? window.getComputedStyle(whyHLine).backgroundColor : null,
+      whySquareBg: whySquare ? window.getComputedStyle(whySquare).backgroundColor : null,
+      heroLineBg: heroLine ? window.getComputedStyle(heroLine).backgroundColor : null,
+      navLineBg: navLine ? window.getComputedStyle(navLine).backgroundColor : null,
+    };
+  });
+  console.log('Computed Token & Element Styles:', JSON.stringify(computedTokens, null, 2));
+
+  // A. About + Features boundary (desktop 1920)
+  console.log('Capturing About + Features boundary (desktop 1920)...');
   const aboutEl = await deskPage.$('#about');
   const featuresEl = await deskPage.$('#features');
   if (aboutEl && featuresEl) {
     const aboutBox = await aboutEl.boundingBox();
-    const featuresBox = await featuresEl.boundingBox();
-    if (aboutBox && featuresBox) {
-      // Boundary is at aboutBox.y + aboutBox.height
+    if (aboutBox) {
       const boundaryY = aboutBox.y + aboutBox.height;
-      // Scroll to boundary
-      await deskPage.evaluate((y) => window.scrollTo({ top: y - 400, behavior: 'instant' }), boundaryY);
-      await deskPage.waitForTimeout(800);
+      await deskPage.evaluate((y) => window.scrollTo({ top: y - 450, behavior: 'instant' }), boundaryY);
+      await deskPage.waitForTimeout(1000);
 
-      // Trigger scroll animation
-      const scrollPos = await deskPage.evaluate(() => window.scrollY);
       await deskPage.screenshot({
         path: path.join(QA_DIR, 'boundary_about_features_desktop_1920.png'),
         clip: {
@@ -79,26 +75,21 @@ async function capture() {
     }
   }
 
-  // C. Why Automate (dark section with hairlines & cream squares)
-  console.log('Capturing Why Automate (dark section)...');
+  // B. Dark section (Why Automate) (desktop 1920)
+  console.log('Capturing Why Automate dark section (desktop 1920)...');
   const whyEl = await deskPage.$('#why');
   if (whyEl) {
     await whyEl.scrollIntoViewIfNeeded();
     await deskPage.waitForTimeout(1000);
-    await whyEl.screenshot({ path: path.join(QA_DIR, 'why_automate_desktop_1920.png') });
-    fs.copyFileSync(path.join(QA_DIR, 'why_automate_desktop_1920.png'), path.join(ARTIFACTS_DIR, 'why_automate_desktop_1920.png'));
-    console.log('Saved why_automate_desktop_1920.png');
-  }
-
-  // D. Pricing section
-  console.log('Capturing Pricing section...');
-  const pricingEl = await deskPage.$('#pricing');
-  if (pricingEl) {
-    await pricingEl.scrollIntoViewIfNeeded();
-    await deskPage.waitForTimeout(1000);
-    await pricingEl.screenshot({ path: path.join(QA_DIR, 'pricing_desktop_1920.png') });
-    fs.copyFileSync(path.join(QA_DIR, 'pricing_desktop_1920.png'), path.join(ARTIFACTS_DIR, 'pricing_desktop_1920.png'));
-    console.log('Saved pricing_desktop_1920.png');
+    const whyBox = await whyEl.boundingBox();
+    if (whyBox) {
+      await deskPage.screenshot({
+        path: path.join(QA_DIR, 'dark_section_desktop_1920.png'),
+        clip: whyBox,
+      });
+      fs.copyFileSync(path.join(QA_DIR, 'dark_section_desktop_1920.png'), path.join(ARTIFACTS_DIR, 'dark_section_desktop_1920.png'));
+      console.log('Saved dark_section_desktop_1920.png');
+    }
   }
 
   await deskContext.close();
@@ -115,80 +106,68 @@ async function capture() {
   await mobilePage.goto('http://localhost:3000', { waitUntil: 'networkidle' });
   await mobilePage.waitForTimeout(600);
 
-  // Check overflow
-  const overflowData = await mobilePage.evaluate(() => {
-    return {
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth,
-      bodyScrollWidth: document.body.scrollWidth,
-    };
-  });
-  console.log('Mobile overflow data:', overflowData);
+  // A. About + Features boundary (mobile 390)
+  console.log('Capturing About + Features boundary (mobile 390)...');
+  const mobAbout = await mobilePage.$('#about');
+  if (mobAbout) {
+    const mobAboutBox = await mobAbout.boundingBox();
+    if (mobAboutBox) {
+      const boundaryY = mobAboutBox.y + mobAboutBox.height;
+      await mobilePage.evaluate((y) => window.scrollTo({ top: y - 400, behavior: 'instant' }), boundaryY);
+      await mobilePage.waitForTimeout(1000);
 
-  // Check vertical lines hidden on mobile
-  const vLineVisibility = await mobilePage.evaluate(() => {
-    const vLines = document.querySelectorAll('.section-v-line');
-    const displays = Array.from(vLines).map((el) => window.getComputedStyle(el).display);
-    return {
-      total: vLines.length,
-      allNone: displays.every((d) => d === 'none'),
-      uniqueDisplays: [...new Set(displays)],
-    };
-  });
-  console.log('Mobile vertical lines visibility:', vLineVisibility);
-
-  // Capture About on mobile
-  const mobileAbout = await mobilePage.$('#about');
-  if (mobileAbout) {
-    await mobileAbout.scrollIntoViewIfNeeded();
-    await mobilePage.waitForTimeout(1000);
-    await mobileAbout.screenshot({ path: path.join(QA_DIR, 'about_mobile_390.png') });
-    fs.copyFileSync(path.join(QA_DIR, 'about_mobile_390.png'), path.join(ARTIFACTS_DIR, 'about_mobile_390.png'));
-    console.log('Saved about_mobile_390.png');
+      await mobilePage.screenshot({
+        path: path.join(QA_DIR, 'boundary_about_features_mobile_390.png'),
+        clip: {
+          x: 0,
+          y: 0,
+          width: 390,
+          height: 800,
+        },
+      });
+      fs.copyFileSync(path.join(QA_DIR, 'boundary_about_features_mobile_390.png'), path.join(ARTIFACTS_DIR, 'boundary_about_features_mobile_390.png'));
+      console.log('Saved boundary_about_features_mobile_390.png');
+    }
   }
 
-  // Capture Why Automate on mobile
-  const mobileWhy = await mobilePage.$('#why');
-  if (mobileWhy) {
-    await mobileWhy.scrollIntoViewIfNeeded();
+  // B. Dark section (Why Automate) (mobile 390)
+  console.log('Capturing Why Automate dark section (mobile 390)...');
+  const mobWhy = await mobilePage.$('#why');
+  if (mobWhy) {
+    await mobWhy.scrollIntoViewIfNeeded();
     await mobilePage.waitForTimeout(1000);
-    await mobileWhy.screenshot({ path: path.join(QA_DIR, 'why_automate_mobile_390.png') });
-    fs.copyFileSync(path.join(QA_DIR, 'why_automate_mobile_390.png'), path.join(ARTIFACTS_DIR, 'why_automate_mobile_390.png'));
-    console.log('Saved why_automate_mobile_390.png');
-  }
-
-  // Check end square positions on mobile
-  const squarePositions = await mobilePage.evaluate(() => {
-    const squares = Array.from(document.querySelectorAll('.section-end-square')).slice(0, 4);
-    return squares.map((sq) => {
-      const rect = sq.getBoundingClientRect();
-      const style = window.getComputedStyle(sq);
-      return {
-        width: rect.width,
-        height: rect.height,
-        leftComputed: style.left,
-        rightComputed: style.right,
-      };
+    const whyTopDoc = await mobilePage.evaluate(() => {
+      const el = document.querySelector('#why');
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return rect.top + window.scrollY;
     });
-  });
-  console.log('Mobile square positions sample:', squarePositions);
+
+    if (whyTopDoc !== null) {
+      // Scroll so the top horizontal line and section bar of Why Automate are visible
+      await mobilePage.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), whyTopDoc);
+      await mobilePage.waitForTimeout(1000);
+
+      await mobilePage.screenshot({
+        path: path.join(QA_DIR, 'dark_section_mobile_390.png'),
+        clip: {
+          x: 0,
+          y: 0,
+          width: 390,
+          height: 800,
+        },
+      });
+      fs.copyFileSync(path.join(QA_DIR, 'dark_section_mobile_390.png'), path.join(ARTIFACTS_DIR, 'dark_section_mobile_390.png'));
+      console.log('Saved dark_section_mobile_390.png');
+    }
+  }
 
   await mobileContext.close();
   await browser.close();
-
-  const results = {
-    errors,
-    overflowData,
-    vLineVisibility,
-    squarePositions,
-  };
-
-  fs.writeFileSync(path.join(QA_DIR, 'results.json'), JSON.stringify(results, null, 2));
-  console.log('QA run completed successfully!');
+  console.log('All QA captures completed successfully!');
 }
 
 capture().catch((err) => {
   console.error('Error during capture:', err);
   process.exit(1);
 });
-

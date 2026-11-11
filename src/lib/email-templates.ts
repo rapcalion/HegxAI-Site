@@ -125,7 +125,7 @@ function renderHeaderLogo(): string {
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr>
           <td style="padding-right:12px; vertical-align:middle;">
-            <img src="${escapeHtml(rawSite)}/brand/hegxai-mark-color.png" width="36" height="32" alt="" style="display:block; width:36px; height:32px; border:0; outline:none; text-decoration:none;" />
+            <img src="${escapeHtml(rawSite)}/brand/hegxai-mark-color.png" width="36" height="36" alt="" style="display:block; width:36px; height:36px; border:0; outline:none; text-decoration:none;" />
           </td>
           <td style="vertical-align:middle;">
             <span style="font-family:Impact, 'Arial Narrow Bold', 'Arial Black', sans-serif; font-size:24px; line-height:1; letter-spacing:2px; color:#FFFFFF; font-weight:bold; text-transform:uppercase;">HEGXAI</span>

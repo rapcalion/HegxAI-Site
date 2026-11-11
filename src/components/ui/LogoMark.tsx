@@ -21,7 +21,7 @@ export default function LogoMark({
   alt = "HEGXAI mark",
   style,
 }: LogoMarkProps) {
-  // Use CSS height with width: auto to preserve the intrinsic 370:330 aspect ratio
+  // Use CSS height with width: auto to preserve the intrinsic 1:1 aspect ratio
   const h = height !== undefined
     ? (typeof height === "number" ? `${height}px` : height)
     : (size !== undefined ? `${size}px` : "var(--logo-mark-h, 40px)");
@@ -30,8 +30,8 @@ export default function LogoMark({
     <Image
       src="/brand/hegxai-mark-color.png"
       alt={ariaHidden ? "" : alt}
-      width={370}
-      height={330}
+      width={600}
+      height={600}
       priority={priority}
       aria-hidden={ariaHidden ? "true" : undefined}
       className={className}

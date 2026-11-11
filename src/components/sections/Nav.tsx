@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/shared";
@@ -12,13 +13,15 @@ import { siteContent } from "@/content/site";
 gsap.registerPlugin(ScrollTrigger);
 
 const NAV_LINKS = [
-  { label: "ABOUT", href: "#about", id: "about" },
-  { label: "SERVICES", href: "#services", id: "services" },
-  { label: "PROCESS", href: "#process", id: "process" },
-  { label: "FAQ", href: "#faq", id: "faq" },
+  { label: "ABOUT", href: "/#about", id: "about" },
+  { label: "SERVICES", href: "/services", id: "services" },
+  { label: "PROCESS", href: "/#process", id: "process" },
+  { label: "FAQ", href: "/#faq", id: "faq" },
 ];
 
 export default function Nav() {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
   const headerRef = useRef<HTMLElement>(null);
 
@@ -41,6 +44,7 @@ export default function Nav() {
 
   // Active section tracking
   const [activeId, setActiveId] = useState<string>("");
+  const currentActiveId = pathname === "/services" ? "services" : activeId;
 
   // Ref tracking scroll navigation lock to prevent hiding while auto-scrolling
   const isNavScrollingRef = useRef(false);
@@ -70,7 +74,9 @@ export default function Nav() {
   };
 
   useEffect(() => {
-    // 0. Active section tracking with ScrollTrigger
+    // 0. Active section tracking (homepage only)
+    if (!isHomePage) return;
+
     const triggers: ScrollTrigger[] = [];
 
     // Clear activeId when Hero is in view
@@ -87,6 +93,7 @@ export default function Nav() {
     }
 
     NAV_LINKS.forEach((link) => {
+      if (link.href === "/services") return;
       const el = document.getElementById(link.id);
       if (!el) return;
       const st = ScrollTrigger.create({
@@ -102,14 +109,39 @@ export default function Nav() {
       triggers.push(st);
     });
 
+    return () => {
+      triggers.forEach((t) => t.kill());
+    };
+  }, [pathname, isHomePage]);
+
+  useEffect(() => {
+    if (isHomePage && typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash;
+      const target = document.querySelector(hash);
+      if (target) {
+        setTimeout(() => {
+          const hStr = getComputedStyle(document.documentElement).getPropertyValue("--header-h").trim();
+          const hNum = parseInt(hStr, 10);
+          const offset = -(hNum || (window.innerWidth < 768 ? 72 : 92));
+          const lenis = (window as unknown as { __lenis?: { scrollTo: (target: Element | string | number, opts: unknown) => void } }).__lenis;
+          if (lenis) {
+            lenis.scrollTo(target, { offset, duration: 1.0 });
+          } else {
+            const top = target.getBoundingClientRect().top + window.scrollY + offset;
+            window.scrollTo({ top, behavior: "smooth" });
+          }
+        }, 200);
+      }
+    }
+  }, [isHomePage]);
+
+  useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
       if (headerRef.current) {
         gsap.set(headerRef.current, { yPercent: 0, opacity: 1 });
       }
-      return () => {
-        triggers.forEach((t) => t.kill());
-      };
+      return;
     }
 
     // 1. Page-load animation: draw in lines from left, then fade up items
@@ -211,7 +243,6 @@ export default function Nav() {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      triggers.forEach((t) => t.kill());
       navST.kill();
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("hashchange", handleHashChange);
@@ -223,68 +254,82 @@ export default function Nav() {
 
   // Smooth scroll handler for nav clicks
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
     showHeader();
-    isNavScrollingRef.current = true;
     closeMobileMenu();
 
-    const getHeaderOffset = () => {
-      if (typeof window === "undefined") return -92;
-      const hStr = getComputedStyle(document.documentElement).getPropertyValue("--header-h").trim();
-      const hNum = parseInt(hStr, 10);
-      return -(hNum || (window.innerWidth < 768 ? 72 : 92));
-    };
-
-    if (href === "/" || href === "#") {
-      const lenis = (window as unknown as { __lenis?: { scrollTo: (target: number, opts: unknown) => void } }).__lenis;
-      if (lenis) {
-        lenis.scrollTo(0, {
-          duration: 1.2,
-          onComplete: () => {
-            setTimeout(() => {
-              isNavScrollingRef.current = false;
-            }, 100);
-          },
-        });
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setTimeout(() => {
-          isNavScrollingRef.current = false;
-        }, 800);
-      }
+    if (href === "/services") {
+      // Direct route navigation to /services; Next.js Link handles it
       return;
     }
 
-    const targetEl = document.querySelector(href);
-    const offset = getHeaderOffset();
+    if (isHomePage) {
+      const getHeaderOffset = () => {
+        if (typeof window === "undefined") return -92;
+        const hStr = getComputedStyle(document.documentElement).getPropertyValue("--header-h").trim();
+        const hNum = parseInt(hStr, 10);
+        return -(hNum || (window.innerWidth < 768 ? 72 : 92));
+      };
 
-    const lenis = (window as unknown as { __lenis?: { scrollTo: (target: Element | string | number, opts: unknown) => void } }).__lenis;
-    if (lenis) {
-      lenis.scrollTo(targetEl || href, {
-        offset,
-        duration: 1.2,
-        onComplete: () => {
-          // Accordion layout can settle while scrolling; preserve the header clearance.
-          if (targetEl) {
-            const landing = targetEl.getBoundingClientRect().top;
-            if (Math.abs(landing + offset) > 1) {
-              lenis.scrollTo(window.scrollY + landing + offset, { immediate: true });
-            }
-          }
+      if (href === "/" || href === "#") {
+        e.preventDefault();
+        isNavScrollingRef.current = true;
+        const lenis = (window as unknown as { __lenis?: { scrollTo: (target: number, opts: unknown) => void } }).__lenis;
+        if (lenis) {
+          lenis.scrollTo(0, {
+            duration: 1.2,
+            onComplete: () => {
+              setTimeout(() => {
+                isNavScrollingRef.current = false;
+              }, 100);
+            },
+          });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
           setTimeout(() => {
             isNavScrollingRef.current = false;
-          }, 100);
-        },
-      });
-    } else {
-      if (targetEl) {
-        const top = targetEl.getBoundingClientRect().top + window.scrollY + offset;
-        window.scrollTo({ top, behavior: "smooth" });
+          }, 800);
+        }
+        return;
       }
-      setTimeout(() => {
-        isNavScrollingRef.current = false;
-      }, 800);
+
+      const targetHash = href.startsWith("/#") ? href.slice(1) : href;
+      const targetEl = document.querySelector(targetHash);
+      if (targetEl) {
+        e.preventDefault();
+        isNavScrollingRef.current = true;
+        const offset = getHeaderOffset();
+
+        const lenis = (window as unknown as { __lenis?: { scrollTo: (target: Element | string | number, opts: unknown) => void } }).__lenis;
+        if (lenis) {
+          lenis.scrollTo(targetEl || targetHash, {
+            offset,
+            duration: 1.2,
+            onComplete: () => {
+              // Accordion layout can settle while scrolling; preserve the header clearance.
+              if (targetEl) {
+                const landing = targetEl.getBoundingClientRect().top;
+                if (Math.abs(landing + offset) > 1) {
+                  lenis.scrollTo(window.scrollY + landing + offset, { immediate: true });
+                }
+              }
+              setTimeout(() => {
+                isNavScrollingRef.current = false;
+              }, 100);
+            },
+          });
+        } else {
+          const top = targetEl.getBoundingClientRect().top + window.scrollY + offset;
+          window.scrollTo({ top, behavior: "smooth" });
+          setTimeout(() => {
+            isNavScrollingRef.current = false;
+          }, 800);
+        }
+        return;
+      }
     }
+
+    // On /services or other subpages:
+    // Do NOT call e.preventDefault(); allow normal Next.js / browser navigation to /#about, /#process, /#faq, /
   };
 
   const menuTriggerBtnRef = useRef<HTMLButtonElement>(null);
@@ -481,10 +526,10 @@ export default function Nav() {
             }}
           >
             {NAV_LINKS.map((link, idx) => {
-              const isActive = activeId === link.id;
+              const isActive = currentActiveId === link.id;
               return (
                 <div key={link.label} style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-                  <a
+                  <Link
                     href={link.href}
                     onClick={(e) => handleLinkClick(e, link.href)}
                     className={`header-nav-link ${isActive ? "is-active" : ""}`}
@@ -499,7 +544,7 @@ export default function Nav() {
                     }}
                   >
                     {link.label}
-                  </a>
+                  </Link>
                   {idx < NAV_LINKS.length - 1 && (
                     <StarShape
                       size={6}
@@ -537,7 +582,7 @@ export default function Nav() {
             ref={line1Ref}
             style={{
               height: "1px",
-              background: "var(--ink)",
+              background: "var(--grid-line)",
               transformOrigin: "left",
               width: "100%",
             }}
@@ -548,7 +593,7 @@ export default function Nav() {
             ref={line2Ref}
             style={{
               height: "1px",
-              background: "var(--ink)",
+              background: "var(--grid-line)",
               transformOrigin: "left",
               width: "100%",
             }}
@@ -559,7 +604,7 @@ export default function Nav() {
             ref={line3Ref}
             style={{
               height: "1px",
-              background: "var(--ink)",
+              background: "var(--grid-line)",
               transformOrigin: "left",
               width: "100%",
             }}
@@ -639,7 +684,7 @@ export default function Nav() {
             ref={mobileLine1Ref}
             style={{
               height: "1px",
-              background: "var(--ink)",
+              background: "var(--grid-line)",
               transformOrigin: "left",
               width: "100%",
             }}
@@ -650,7 +695,7 @@ export default function Nav() {
             ref={mobileLine2Ref}
             style={{
               height: "1px",
-              background: "var(--ink)",
+              background: "var(--grid-line)",
               transformOrigin: "left",
               width: "100%",
             }}
@@ -686,7 +731,7 @@ export default function Nav() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderBottom: "1px solid var(--ink)",
+              borderBottom: "1px solid var(--grid-line)",
               paddingBottom: "16px",
             }}
           >
@@ -746,7 +791,7 @@ export default function Nav() {
           >
             {NAV_LINKS.map((link) => (
               <div key={link.label} style={{ overflow: "hidden" }}>
-                <a
+                <Link
                   href={link.href}
                   onClick={(e) => handleLinkClick(e, link.href)}
                   style={{
@@ -764,7 +809,7 @@ export default function Nav() {
                   }}
                 >
                   {link.label}
-                </a>
+                </Link>
               </div>
             ))}
           </nav>

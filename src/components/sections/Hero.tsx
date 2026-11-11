@@ -437,12 +437,13 @@ export default function Hero() {
         {/* ─── 5. TWO THIN HORIZONTAL LINES WITH MONO LABELS ─── */}
         <div style={{ width: "100%", position: "relative", zIndex: 3 }}>
           {/* Top Line 1 (1px ink at 25%) */}
+          {/* Top Line 1 (1px grid-line) */}
           <div
             style={{
               position: "relative",
               width: "100%",
               height: "1px",
-              background: "rgba(20,20,20,0.25)",
+              background: "var(--grid-line)",
             }}
           >
             <span
@@ -453,7 +454,7 @@ export default function Hero() {
                 top: "-3.5px",
                 width: "var(--grid-square-size, 8px)",
                 height: "var(--grid-square-size, 8px)",
-                background: "rgba(20, 20, 20, 0.85)",
+                background: "var(--grid-square)",
                 pointerEvents: "none",
               }}
             />
@@ -465,7 +466,7 @@ export default function Hero() {
                 top: "-3.5px",
                 width: "var(--grid-square-size, 8px)",
                 height: "var(--grid-square-size, 8px)",
-                background: "rgba(20, 20, 20, 0.85)",
+                background: "var(--grid-square)",
                 pointerEvents: "none",
               }}
             />
@@ -509,13 +510,13 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* Bottom Line 2 (1px ink at 25%) */}
+          {/* Bottom Line 2 (1px grid-line) */}
           <div
             style={{
               position: "relative",
               width: "100%",
               height: "1px",
-              background: "rgba(20,20,20,0.25)",
+              background: "var(--grid-line)",
             }}
           >
             <span
@@ -526,7 +527,7 @@ export default function Hero() {
                 top: "-3.5px",
                 width: "var(--grid-square-size, 8px)",
                 height: "var(--grid-square-size, 8px)",
-                background: "rgba(20, 20, 20, 0.85)",
+                background: "var(--grid-square)",
                 pointerEvents: "none",
               }}
             />
@@ -538,7 +539,7 @@ export default function Hero() {
                 top: "-3.5px",
                 width: "var(--grid-square-size, 8px)",
                 height: "var(--grid-square-size, 8px)",
-                background: "rgba(20, 20, 20, 0.85)",
+                background: "var(--grid-square)",
                 pointerEvents: "none",
               }}
             />

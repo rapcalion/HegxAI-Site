@@ -132,7 +132,7 @@ export default function CTABlock() {
       if (res.ok && data?.ok) {
         setStatus("success");
         try {
-          router.push("/thanks");
+          router.push("/thanks?source=form");
         } catch {
           // Inline success fallback remains visible if redirect throws
         }

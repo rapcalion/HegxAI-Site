@@ -4,34 +4,18 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
-import { getContactHref } from "@/content/site";
+import { getContactHref, siteContent, FaqItem } from "@/content/site";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const FAQS = [
-  {
-    q: "How long does a project take?",
-    a: "It depends on scope — a single workflow automation can be live in days, while a full multi-system deployment typically takes a few weeks. We scope this clearly in our initial audit so there are no surprises.",
-  },
-  {
-    q: "Does it work with our existing tools?",
-    a: "In almost every case, yes. We build integrations for the most common business tools — CRMs, email platforms, spreadsheets, project management software, and more. If your tool has an API, we can connect it.",
-  },
-  {
-    q: "Do you build custom AI agents?",
-    a: "Yes. We design and deploy AI agents tailored to your specific workflows — whether that's a customer support agent, a lead qualification bot, or an internal operations assistant. Every agent is purpose-built, not off-the-shelf.",
-  },
-  {
-    q: "How do you handle data security?",
-    a: "We take data security seriously. All automations are built with least-privilege access principles, encrypted connections, and clear data handling documentation. We never store your data beyond what's needed to make a system work.",
-  },
-  {
-    q: "Do you provide ongoing support?",
-    a: "Yes. Every project includes a handoff period, full documentation, and an option for ongoing maintenance. Your automations will keep running reliably — and if anything needs adjusting as your business evolves, we're here.",
-  },
-];
+export interface FAQProps {
+  items?: FaqItem[];
+  sectionNumber?: string;
+  id?: string;
+}
 
-export default function FAQ() {
+export default function FAQ({ items, sectionNumber, id = "faq" }: FAQProps = {}) {
+  const faqList = items ?? siteContent.faq ?? [];
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [showAllFaqs, setShowAllFaqs] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -50,6 +34,8 @@ export default function FAQ() {
       }
     );
   }, []);
+
+  if (faqList.length === 0) return null;
 
   const toggle = (idx: number) => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -79,17 +65,16 @@ export default function FAQ() {
 
   return (
     <SectionFrame
-      id="faq"
+      id={id}
       ariaLabelledby="faq-title"
       ref={sectionRef}
       theme="cream"
       style={{
         background: "var(--bg)",
-        opacity: 0,
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)" }}>
-        <SectionBar label="FAQ" sectionId="faq" />
+        <SectionBar label="FAQ" sectionId="faq" num={sectionNumber} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-20 items-start" style={{ marginTop: "var(--heading-content-gap, 40px)" }}>
           {/* Left: heading + intro */}
@@ -158,7 +143,7 @@ export default function FAQ() {
 
           {/* Right: accordion */}
           <div>
-            {FAQS.map((faq, i) => {
+            {faqList.map((faq, i) => {
               const isHiddenOnMobile = !showAllFaqs && i >= 4;
               return (
                 <div
@@ -245,7 +230,7 @@ export default function FAQ() {
               );
             })}
 
-            {FAQS.length > 4 && (
+            {faqList.length > 4 && (
               <div className="md:hidden pt-3">
                 <button
                   type="button"

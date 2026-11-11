@@ -41,11 +41,11 @@ export const SectionFrame = React.forwardRef<HTMLElement, SectionFrameProps>(
 
     const isDark = theme === "dark";
     const lineColor = isDark
-      ? "var(--grid-line-dark, rgba(255, 255, 255, 0.12))"
-      : "var(--grid-line, var(--hairline, #D9D4C9))";
+      ? "var(--grid-line-dark, rgba(255, 255, 255, 0.3))"
+      : "var(--grid-line, rgba(20, 20, 20, 0.5))";
     const squareColor = isDark
-      ? "rgba(244, 239, 230, 0.70)" // cream at 70% on dark
-      : "rgba(20, 20, 20, 0.85)"; // ink at 85% on cream
+      ? "var(--grid-square-dark, rgba(255, 255, 255, 0.85))"
+      : "var(--grid-square, #141414)";
 
     useGSAP(
       () => {

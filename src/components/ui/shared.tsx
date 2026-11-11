@@ -83,7 +83,7 @@ export function SectionBar({
             position: "relative",
             width: "100%",
             height: "1px",
-            background: isDark ? "rgba(255,255,255,0.18)" : "rgba(20,20,20,0.25)",
+            background: isDark ? "var(--grid-line-dark)" : "var(--grid-line)",
             marginBottom: "12px",
           }}
         >
@@ -97,7 +97,7 @@ export function SectionBar({
                   top: "-4.5px",
                   width: "10px",
                   height: "10px",
-                  background: isDark ? "#ffffff" : "#2b2b2b",
+                  background: isDark ? "var(--grid-square-dark)" : "var(--grid-square)",
                 }}
               />
               {/* Right node (at x=40px from viewport edge desktop, 16px mobile) */}
@@ -108,7 +108,7 @@ export function SectionBar({
                   top: "-4.5px",
                   width: "10px",
                   height: "10px",
-                  background: isDark ? "#ffffff" : "#2b2b2b",
+                  background: isDark ? "var(--grid-square-dark)" : "var(--grid-square)",
                 }}
               />
             </>

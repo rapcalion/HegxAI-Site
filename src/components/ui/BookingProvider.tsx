@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useRef } from "react";
+import React, { createContext, useContext, useCallback, useRef, useState } from "react";
 import { siteContent, getCalLink } from "@/content/site";
-
+import LogoMark from "@/components/ui/LogoMark";
 import type { GlobalCal, GlobalCalWithoutNs } from "@calcom/embed-core";
 
 export interface BookingOptions {
@@ -20,10 +20,82 @@ interface BookingContextType {
 
 const BookingContext = createContext<BookingContextType | null>(null);
 
+function ConfirmingOverlay() {
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="confirming-overlay"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2147483647,
+        backgroundColor: "var(--bg, #F4EFE6)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "16px",
+        opacity: mounted ? 1 : 0,
+        transition: "opacity 120ms ease-out",
+        pointerEvents: "auto",
+      }}
+    >
+      <LogoMark height={36} />
+      <span
+        style={{
+          fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
+          fontSize: "14px",
+          fontWeight: 500,
+          letterSpacing: "0.04em",
+          color: "var(--ink, #141414)",
+        }}
+      >
+        Confirming your booking…
+      </span>
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          .confirming-overlay {
+            transition: none !important;
+            opacity: 1 !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export function BookingProvider({ children }: { children: React.ReactNode }) {
   const calPromiseRef = useRef<Promise<GlobalCal | GlobalCalWithoutNs> | null>(null);
+  const subscribedRef = useRef(false);
+  const isBookingHandledRef = useRef(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+
   const bookingUrl = siteContent.contact.bookingUrl || "";
   const calLink = getCalLink(bookingUrl);
+
+  const handleBookingSuccess = useCallback(() => {
+    if (isBookingHandledRef.current) return;
+    isBookingHandledRef.current = true;
+    setIsConfirming(true);
+
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const delay = prefersReduced ? 0 : 120;
+    setTimeout(() => {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/thanks?source=cal");
+    }, delay);
+  }, []);
 
   const initCal = useCallback(() => {
     if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
@@ -46,11 +118,25 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             },
           },
         });
+
+        // Subscribe once to booking success events (guard with a ref, never rescheduleBookingSuccessful)
+        if (!subscribedRef.current) {
+          subscribedRef.current = true;
+          cal("on", {
+            action: "bookingSuccessful",
+            callback: handleBookingSuccess,
+          });
+          cal("on", {
+            action: "bookingSuccessfulV2",
+            callback: handleBookingSuccess,
+          });
+        }
+
         return cal;
       })();
     }
     return calPromiseRef.current;
-  }, []);
+  }, [handleBookingSuccess]);
 
   const preloadBooking = useCallback(() => {
     if (bookingUrl) {
@@ -116,6 +202,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   return (
     <BookingContext.Provider value={{ openBooking, preloadBooking, bookingUrl, calLink }}>
       {children}
+      {isConfirming && <ConfirmingOverlay />}
     </BookingContext.Provider>
   );
 }

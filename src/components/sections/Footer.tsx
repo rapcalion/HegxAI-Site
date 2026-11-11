@@ -11,7 +11,7 @@ const CURRENT_YEAR = 2026;
 const PAGES_LINKS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/#about" },
-  { label: "Services", href: "/#services" },
+  { label: "Services", href: "/services" },
   { label: "Process", href: "/#process" },
   { label: "FAQ", href: "/#faq" },
 ];

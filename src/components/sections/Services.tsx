@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -255,6 +256,37 @@ export default function Services() {
               </div>
             );
           })}
+        </div>
+
+        {/* Link to dedicated services page */}
+        <div style={{ marginTop: "32px", display: "flex", justifyContent: "flex-start" }}>
+          <Link
+            href="/services"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              minHeight: "44px",
+              fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
+              fontSize: "14px",
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "var(--ink)",
+              textDecoration: "underline",
+              textUnderlineOffset: "4px",
+              transition: "gap 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.gap = "12px";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.gap = "8px";
+            }}
+          >
+            <span>View all services</span>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
         {/* Client Logos Marquee - only shown if real logos exist */}
