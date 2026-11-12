@@ -327,7 +327,7 @@ export const siteContent: SiteContent = {
   ],
   contact: {
     email: "", // keep empty per task
-    bookingUrl: "https://cal.com/hegxai/free-audit",
+    bookingUrl: "https://cal.com/hegxcorp-afipon/free-audit-call",
     newsletterAction: "", // TODO: newsletter subscription endpoint (leave empty to hide form)
   },
   founder: {
@@ -364,7 +364,7 @@ export const siteContent: SiteContent = {
       priceNote: "Scoped after a free audit",
       recommended: false,
       ctaLabel: "Book a free audit",
-      ctaHref: "https://cal.com/hegxai/free-audit",
+      ctaHref: "https://cal.com/hegxcorp-afipon/free-audit-call",
       features: [
         "Full operational audit",
         "Multiple connected agents and workflows",
