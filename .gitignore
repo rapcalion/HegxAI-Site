@@ -44,3 +44,4 @@ next-env.d.ts
 # scripts and scratch
 *.ps1
 scratch_*
+*.zip
