@@ -103,6 +103,14 @@ if (siteContent.contact.email) {
   };
 }
 
+if (siteContent.founder?.name) {
+  organizationJsonLd.founder = {
+    "@type": "Person",
+    name: siteContent.founder.name,
+    jobTitle: siteContent.founder.role || "Founder",
+  };
+}
+
 if (siteContent.socials && siteContent.socials.length > 0) {
   organizationJsonLd.sameAs = siteContent.socials.map((s) => s.href);
 }

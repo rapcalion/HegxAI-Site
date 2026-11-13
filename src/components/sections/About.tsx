@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, StickyTag } from "@/components/ui/shared";
@@ -10,16 +11,27 @@ import { siteContent } from "@/content/site";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const FOUNDER_BLUR_URL =
+  "data:image/jpeg;base64,/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAQABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAwIE/8QAJBAAAgEEAQIHAAAAAAAAAAAAAQIDABESIQQFQRMiMVFhccH/xAAUAQEAAAAAAAAAAAAAAAAAAAAC/8QAFxEBAQEBAAAAAAAAAAAAAAAAAQBBEf/aAAwDAQACEQMRAD8Ayuw0EuxY28m7D3pRmAfEjYJYFZCLBr/tXByJeMSyZoSN4qGVt+hH1RcvqbSI4lMpfG0asAqqbnePfXf5ogOyemX/2Q==";
+
 export default function About() {
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
   const sectionRef = useRef<HTMLElement>(null);
   const tagRef = useRef<HTMLAnchorElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
   const graySpanRef = useRef<HTMLSpanElement>(null);
+  const founderRef = useRef<HTMLDivElement>(null);
   const col1LineRef = useRef<HTMLDivElement>(null);
   const col1TextRef = useRef<HTMLDivElement>(null);
   const col2LineRef = useRef<HTMLDivElement>(null);
   const col2TextRef = useRef<HTMLDivElement>(null);
+
+  const founder = siteContent.founder;
+  const hasFounder = Boolean(founder && founder.name && (founder.image || founder.photo));
+  const founderImage = founder?.image || founder?.photo || "";
+  const founderAlt =
+    founder?.alt ||
+    (founder?.name && founder?.role ? `${founder.name}, ${founder.role} of HEGXAI` : founder?.name || "Founder portrait");
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -96,6 +108,27 @@ export default function About() {
             }
           );
         }
+      }
+
+      // 2b. Founder portrait entrance (fade/slide up with scale-in)
+      if (founderRef.current) {
+        gsap.fromTo(
+          founderRef.current,
+          { opacity: 0, y: 16, scale: 0.96 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.75,
+            ease: "power3.out",
+            delay: 0.2,
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
+              toggleActions: "play none none none",
+            },
+          }
+        );
       }
 
       // 3. Text Columns: lines scaleY from top, text fades up (no square handles)
@@ -247,39 +280,70 @@ export default function About() {
 
           {/* Right Column: Two-Tone Headline + Two Text Columns */}
           <div className="about-main-content">
-            {/* Headline: 3-4 lines on desktop */}
-            <div ref={headlineRef} className="about-headline-wrap">
-              <h2
-                id="about-title"
-                style={{
-                  fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
-                  fontWeight: 500,
-                  fontSize: "clamp(28px, 3.6vw, 46px)",
-                  lineHeight: 1.04,
-                  letterSpacing: "-0.03em",
-                  margin: 0,
-                }}
-              >
-                <span className="headline-reveal-mask">
-                  <span className="headline-reveal-line" style={{ color: "var(--ink, #141414)" }}>
-                    {siteContent.about.headlineLeadLine1}
+            {/* Header: Headline + Founder portrait (top-right of block on desktop) */}
+            <div className="about-header-wrap">
+              <div ref={headlineRef} className="about-headline-wrap">
+                <h2
+                  id="about-title"
+                  style={{
+                    fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
+                    fontWeight: 500,
+                    fontSize: "clamp(28px, 3.6vw, 46px)",
+                    lineHeight: 1.04,
+                    letterSpacing: "-0.03em",
+                    margin: 0,
+                  }}
+                >
+                  <span className="headline-reveal-mask">
+                    <span className="headline-reveal-line" style={{ color: "var(--ink, #141414)" }}>
+                      {siteContent.about.headlineLeadLine1}
+                    </span>
                   </span>
-                </span>
-                <span className="headline-reveal-mask">
-                  <span className="headline-reveal-line" style={{ color: "var(--ink, #141414)" }}>
-                    {siteContent.about.headlineLeadLine2}
+                  <span className="headline-reveal-mask">
+                    <span className="headline-reveal-line" style={{ color: "var(--ink, #141414)" }}>
+                      {siteContent.about.headlineLeadLine2}
+                    </span>
                   </span>
-                </span>
-                <span className="headline-reveal-mask">
-                  <span
-                    ref={graySpanRef}
-                    className="headline-reveal-line"
-                    style={{ color: "#757269", transition: "color 0.4s ease" }}
-                  >
-                    {siteContent.about.headlineMuted}
+                  <span className="headline-reveal-mask">
+                    <span
+                      ref={graySpanRef}
+                      className="headline-reveal-line"
+                      style={{ color: "#757269", transition: "color 0.4s ease" }}
+                    >
+                      {siteContent.about.headlineMuted}
+                    </span>
                   </span>
-                </span>
-              </h2>
+                </h2>
+              </div>
+
+              {hasFounder && (
+                <aside
+                  ref={founderRef}
+                  className="about-founder-block"
+                  aria-label="Founder"
+                >
+                  <div className="about-founder-avatar-wrap">
+                    <Image
+                      src={founderImage}
+                      alt={founderAlt}
+                      width={86}
+                      height={86}
+                      quality={85}
+                      priority={false}
+                      placeholder="blur"
+                      blurDataURL={FOUNDER_BLUR_URL}
+                      sizes="(max-width: 1023px) 72px, 86px"
+                      className="about-founder-avatar-img"
+                    />
+                  </div>
+                  <div className="about-founder-info">
+                    <span className="about-founder-name">{founder.name}</span>
+                    {founder.role && (
+                      <span className="about-founder-role">{founder.role}</span>
+                    )}
+                  </div>
+                </aside>
+              )}
             </div>
 
             {/* Two Columns: aligned to the same grid as headline, min 24px right padding from frame */}
@@ -414,8 +478,77 @@ export default function About() {
           width: 100%;
         }
 
-        .about-headline-wrap {
+        .about-header-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 36px;
           width: 100%;
+        }
+
+        .about-headline-wrap {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+        .about-founder-block {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
+          gap: 10px;
+          flex-shrink: 0;
+          padding-top: 4px;
+        }
+
+        .about-founder-avatar-wrap {
+          width: 86px;
+          height: 86px;
+          border-radius: 50%;
+          overflow: hidden;
+          position: relative;
+          background: var(--surface, #FBF8F2);
+          border: 1px solid var(--line, rgba(20, 20, 20, 0.16));
+          box-shadow: 0 0 0 1px rgba(20, 20, 20, 0.04);
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+        }
+
+        .about-founder-avatar-wrap:hover {
+          transform: scale(1.03);
+          box-shadow: 0 4px 16px rgba(20, 20, 20, 0.08);
+        }
+
+        .about-founder-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 20%;
+          display: block;
+        }
+
+        .about-founder-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
+          gap: 2px;
+        }
+
+        .about-founder-name {
+          font-family: var(--ff-display, 'Inter Tight', sans-serif);
+          font-weight: 700;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+          color: var(--ink, #141414);
+          line-height: 1.2;
+        }
+
+        .about-founder-role {
+          font-family: var(--ff-body, 'DM Sans', sans-serif);
+          font-size: 12px;
+          color: var(--muted, #757269);
+          line-height: 1.25;
         }
 
         .headline-reveal-mask {
@@ -456,6 +589,28 @@ export default function About() {
           .about-cols-wrap {
             column-gap: 28px;
           }
+          .about-header-wrap {
+            flex-direction: column;
+            gap: 20px;
+            align-items: flex-start;
+          }
+          .about-founder-block {
+            order: -1;
+            flex-direction: row;
+            align-items: center;
+            text-align: left;
+            gap: 14px;
+            padding-top: 0;
+          }
+          .about-founder-avatar-wrap {
+            width: 72px;
+            height: 72px;
+          }
+          .about-founder-info {
+            align-items: flex-start;
+            text-align: left;
+            gap: 2px;
+          }
         }
 
         @media (max-width: 767px) {
@@ -467,8 +622,33 @@ export default function About() {
           .about-main-content {
             display: contents !important;
           }
-          .about-headline-wrap {
+          .about-header-wrap {
             order: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 18px !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+          }
+          .about-founder-block {
+            order: -1 !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            text-align: left !important;
+            gap: 14px !important;
+            padding-top: 0 !important;
+          }
+          .about-founder-avatar-wrap {
+            width: 72px !important;
+            height: 72px !important;
+          }
+          .about-founder-info {
+            align-items: flex-start !important;
+            text-align: left !important;
+            gap: 2px !important;
+          }
+          .about-headline-wrap {
+            width: 100% !important;
           }
           .about-headline-wrap h2 {
             font-size: 28px !important;

@@ -151,6 +151,15 @@ export interface SiteSeo {
   };
 }
 
+export interface FounderContent {
+  name: string;
+  role: string;
+  image?: string;
+  alt?: string;
+  photo?: string;
+  bio?: string;
+}
+
 export interface SiteContent {
   seo: SiteSeo;
   logo?: {
@@ -187,12 +196,7 @@ export interface SiteContent {
     bookingUrl: string;
     newsletterAction: string;
   };
-  founder: {
-    name: string;
-    role: string;
-    photo: string;
-    bio: string;
-  };
+  founder: FounderContent;
   clientLogos: Array<{ name: string; logoUrl: string }>;
   logos: Array<{ name: string; url: string }>;
   pricingTiers: PricingTier[];
@@ -399,9 +403,11 @@ export const siteContent: SiteContent = {
     newsletterAction: "", // TODO: newsletter subscription endpoint (leave empty to hide form)
   },
   founder: {
-    name: "", // Keep empty to hide founder slot until real data exists
-    role: "",
-    photo: "",
+    name: "Akshay Jadia",
+    role: "Founder",
+    image: "/founder.jpg",
+    alt: "Akshay Jadia, Founder of HEGXAI",
+    photo: "/founder.jpg",
     bio: "",
   },
   clientLogos: [],
