@@ -44,6 +44,11 @@ npx tsc --noEmit
 npm run lint
 ```
 
+### Webhook Testing
+```bash
+npm run test:webhook [base-url] # sends HMAC-signed test Cal.com booking payload to /api/webhooks/cal
+```
+
 ---
 
 ## Folder Map

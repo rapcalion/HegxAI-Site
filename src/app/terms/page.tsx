@@ -1,11 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { siteContent } from "@/content/site";
+import { SITE_URL } from "@/lib/site-url";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | HEGXAI",
-  description:
-    "Terms of Service for HEGXAI. Overview of website usage and engagement terms.",
+  title: siteContent.seo.pages.terms.title,
+  description: siteContent.seo.pages.terms.description,
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: siteContent.seo.pages.terms.title,
+    description: siteContent.seo.pages.terms.description,
+    url: `${SITE_URL}/terms`,
+    siteName: siteContent.seo.siteName,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteContent.seo.pages.terms.title,
+    description: siteContent.seo.pages.terms.description,
+  },
 };
 
 export default function TermsPage() {

@@ -1,11 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { siteContent } from "@/content/site";
+import { SITE_URL } from "@/lib/site-url";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | HEGXAI",
-  description:
-    "Privacy Policy for HEGXAI. Overview of information collected via our contact form and how it is used.",
+  title: siteContent.seo.pages.privacy.title,
+  description: siteContent.seo.pages.privacy.description,
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: siteContent.seo.pages.privacy.title,
+    description: siteContent.seo.pages.privacy.description,
+    url: `${SITE_URL}/privacy`,
+    siteName: siteContent.seo.siteName,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteContent.seo.pages.privacy.title,
+    description: siteContent.seo.pages.privacy.description,
+  },
 };
 
 export default function PrivacyPage() {

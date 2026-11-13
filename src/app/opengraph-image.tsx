@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
+import { siteContent } from "@/content/site";
 
-export const alt = "HEGXAI — Every Task. Automated.";
+export const alt = siteContent.seo.ogImageAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -14,100 +15,127 @@ export default async function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: "80px",
-          backgroundColor: "#0E1020",
-          color: "#F4EFE6",
+          padding: "72px 80px",
+          backgroundColor: "#F4EFE6",
+          color: "#141414",
           position: "relative",
           overflow: "hidden",
+          fontFamily: "sans-serif",
         }}
       >
-        {/* Star Motif SVG in background */}
+        {/* Subtle decorative background star motif */}
         <div
           style={{
             position: "absolute",
-            right: "-120px",
-            top: "-120px",
-            width: "800px",
-            height: "800px",
+            right: "-80px",
+            top: "-80px",
+            width: "560px",
+            height: "560px",
             display: "flex",
-            opacity: 0.12,
+            opacity: 0.08,
           }}
         >
-          <svg viewBox="0 0 100 100" width="800" height="800" fill="none">
+          <svg viewBox="0 0 100 100" width="560" height="560" fill="none">
             <path
               d="M50 0 C50 28 72 50 100 50 C72 50 50 72 50 100 C50 72 28 50 0 50 C28 50 50 28 50 0 Z"
-              stroke="#5170FF"
-              strokeWidth="1"
+              stroke="#141414"
+              strokeWidth="1.5"
             />
           </svg>
         </div>
 
-        {/* Top: Logo with Sparkle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", width: 44, height: 44 }}>
-            <svg viewBox="0 0 100 100" width="44" height="44" fill="none">
-              <path
-                d="M50 0 C50 28 72 50 100 50 C72 50 50 72 50 100 C50 72 28 50 0 50 C28 50 50 28 50 0 Z"
-                fill="none"
-                stroke="#7D93FF"
-                strokeWidth="2"
-              />
-              <polygon points="50,15 80,50 50,85 20,50" fill="#5170FF" />
-            </svg>
-          </div>
-          <span
-            style={{
-              fontSize: 44,
-              fontWeight: 900,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: "#F4EFE6",
-            }}
-          >
-            HEGXAI
-          </span>
-        </div>
-
-        {/* Center: Headline */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        {/* Top bar: Brand wordmark & label */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {/* Sparkle icon */}
+            <div style={{ display: "flex", width: 36, height: 36 }}>
+              <svg viewBox="0 0 100 100" width="36" height="36" fill="none">
+                <path
+                  d="M50 0 C50 28 72 50 100 50 C72 50 50 72 50 100 C50 72 28 50 0 50 C28 50 50 28 50 0 Z"
+                  fill="#5170FF"
+                />
+              </svg>
+            </div>
             <span
               style={{
-                fontSize: 64,
-                fontWeight: 700,
-                letterSpacing: "-0.04em",
+                fontSize: 32,
+                fontWeight: 900,
+                letterSpacing: "0.04em",
                 textTransform: "uppercase",
-                lineHeight: 1,
-                color: "#F4EFE6",
+                color: "#141414",
               }}
             >
-              EVERY TASK.
+              HEGXAI
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "6px 14px",
+              background: "rgba(20, 20, 20, 0.05)",
+              border: "1px solid rgba(20, 20, 20, 0.12)",
+              borderRadius: "4px",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#2F4FD6",
+            }}
+          >
+            AI AUTOMATION AGENCY
+          </div>
+        </div>
+
+        {/* Center: Main text "Every task. Automated." */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+            <span
+              style={{
+                fontSize: 74,
+                fontWeight: 600,
+                letterSpacing: "-0.03em",
+                color: "#141414",
+                lineHeight: 1,
+              }}
+            >
+              Every task.
             </span>
             <span
               style={{
                 background: "linear-gradient(90deg, #194EB4 0%, #5170FF 50%, #B368DF 100%)",
                 color: "#ffffff",
-                padding: "6px 20px",
-                fontSize: 64,
-                fontWeight: 700,
-                letterSpacing: "-0.04em",
-                textTransform: "uppercase",
+                padding: "4px 22px",
+                borderRadius: "4px",
+                fontSize: 74,
+                fontWeight: 600,
+                letterSpacing: "-0.03em",
                 lineHeight: 1,
               }}
             >
-              AUTOMATED.
+              Automated.
             </span>
           </div>
 
           <p
             style={{
               fontSize: 26,
-              color: "#7D93FF",
+              color: "rgba(20, 20, 20, 0.7)",
               margin: 0,
               fontWeight: 400,
+              maxWidth: "760px",
+              lineHeight: 1.4,
             }}
           >
-            AI agents and workflow automation for businesses
+            {siteContent.hero.subtitle}
           </p>
         </div>
 
@@ -117,16 +145,16 @@ export default async function Image() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderTop: "1px solid rgba(255,255,255,0.12)",
-            paddingTop: 24,
-            fontSize: 16,
-            color: "rgba(244,239,230,0.6)",
+            borderTop: "1px solid rgba(20, 20, 20, 0.12)",
+            paddingTop: 20,
+            fontSize: 14,
+            color: "rgba(20, 20, 20, 0.6)",
             textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            letterSpacing: "0.1em",
           }}
         >
           <span>hegxai.com</span>
-          <span>B2B AI Automation Agency</span>
+          <span style={{ color: "#2F4FD6" }}>Intelligent Agents & Workflows</span>
         </div>
       </div>
     ),

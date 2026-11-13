@@ -6,7 +6,8 @@
     "dev": "next dev --webpack -H 0.0.0.0",
     "build": "next build --webpack",
     "start": "next start -H 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:webhook": "node scripts/test-cal-webhook.mjs"
   },
   "dependencies": {
     "@calcom/embed-react": "1.5.3",

@@ -175,8 +175,10 @@ export default function About() {
             <img
               key={i}
               src={logo.url}
-              alt={logo.name}
-              style={{ maxHeight: "24px", objectFit: "contain" }}
+              alt={logo.name || ""}
+              width={120}
+              height={24}
+              style={{ maxHeight: "24px", width: "auto", objectFit: "contain" }}
             />
           ))}
         </div>

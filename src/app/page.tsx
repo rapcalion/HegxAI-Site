@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+import { siteContent } from "@/content/site";
+import { SITE_URL } from "@/lib/site-url";
+import JsonLd from "@/components/seo/JsonLd";
 import SmoothScrollProvider from "@/lib/SmoothScrollProvider";
 import Nav from "@/components/sections/Nav";
 import Hero from "@/components/sections/Hero";
@@ -11,9 +15,46 @@ import FAQ from "@/components/sections/FAQ";
 import CTABlock from "@/components/sections/CTABlock";
 import Footer from "@/components/sections/Footer";
 
+export const metadata: Metadata = {
+  title: siteContent.seo.pages.home.title,
+  description: siteContent.seo.pages.home.description,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: siteContent.seo.pages.home.title,
+    description: siteContent.seo.pages.home.description,
+    url: SITE_URL,
+    siteName: siteContent.seo.siteName,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteContent.seo.pages.home.title,
+    description: siteContent.seo.pages.home.description,
+  },
+};
+
+const faqJsonLd =
+  siteContent.faq && siteContent.faq.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: siteContent.faq.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
+        })),
+      }
+    : null;
+
 export default function Home() {
   return (
     <SmoothScrollProvider>
+      {faqJsonLd && <JsonLd data={faqJsonLd} />}
       {/* 0. NAV */}
       <Nav />
 

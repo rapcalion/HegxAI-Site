@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { siteContent } from "@/content/site";
+import { SITE_URL } from "@/lib/site-url";
+import JsonLd from "@/components/seo/JsonLd";
 import Nav from "@/components/sections/Nav";
 import Footer from "@/components/sections/Footer";
 import SectionFrame from "@/components/ui/SectionFrame";
@@ -12,27 +14,48 @@ import BookingAuditButton from "@/components/services/BookingAuditButton";
 import ServiceMockPanel from "@/components/services/ServiceMockPanel";
 import ProcessSteps from "@/components/services/ProcessSteps";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
 export const metadata: Metadata = {
-  title: "Services | HEGXAI",
-  description: siteContent.servicesPage.hero.subtext,
+  title: siteContent.seo.pages.services.title,
+  description: siteContent.seo.pages.services.description,
   alternates: {
-    canonical: `${siteUrl}/services`,
+    canonical: "/services",
   },
   openGraph: {
-    title: "Services | HEGXAI",
-    description: siteContent.servicesPage.hero.subtext,
-    url: `${siteUrl}/services`,
-    siteName: "HEGXAI",
+    title: siteContent.seo.pages.services.title,
+    description: siteContent.seo.pages.services.description,
+    url: `${SITE_URL}/services`,
+    siteName: siteContent.seo.siteName,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Services | HEGXAI",
-    description: siteContent.servicesPage.hero.subtext,
+    title: siteContent.seo.pages.services.title,
+    description: siteContent.seo.pages.services.description,
   },
 };
+
+const servicesJsonLd =
+  siteContent.servicesPage.services && siteContent.servicesPage.services.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "HEGXAI AI Automation Services",
+        itemListElement: siteContent.servicesPage.services.map((service, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "Service",
+            name: service.title,
+            description: service.description,
+            provider: {
+              "@type": "Organization",
+              name: siteContent.seo.siteName,
+              url: SITE_URL,
+            },
+          },
+        })),
+      }
+    : null;
 
 export default function ServicesPage() {
   const { hero, services, benefits, process } = siteContent.servicesPage;
@@ -40,6 +63,7 @@ export default function ServicesPage() {
 
   return (
     <SmoothScrollProvider>
+      {servicesJsonLd && <JsonLd data={servicesJsonLd} />}
       <Nav />
 
       <main id="main">
@@ -119,6 +143,7 @@ export default function ServicesPage() {
             </div>
 
             {/* 1C. Services Grid */}
+            <h2 className="sr-only">Our AI Automation Services</h2>
             <div className="services-cards-grid">
               {services.map((service, index) => {
                 const isWide = index === services.length - 1 && services.length % 2 !== 0;

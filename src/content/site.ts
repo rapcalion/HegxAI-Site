@@ -125,7 +125,34 @@ export interface FeatureItem {
   visual: FeatureVisualData;
 }
 
+export interface PageSeo {
+  title: string;
+  description: string;
+  canonical: string;
+}
+
+export interface SiteSeo {
+  siteName: string;
+  defaultTitle: string;
+  titleTemplate: string;
+  description: string;
+  applicationName: string;
+  locale: string;
+  ogImageAlt: string;
+  pages: {
+    home: PageSeo;
+    services: PageSeo;
+    privacy: PageSeo;
+    terms: PageSeo;
+    thanks: {
+      title: string;
+      description: string;
+    };
+  };
+}
+
 export interface SiteContent {
+  seo: SiteSeo;
   logo?: {
     showWordmark: boolean;
   };
@@ -212,6 +239,47 @@ export function getCalLink(url: string = siteContent.contact.bookingUrl): string
 }
 
 export const siteContent: SiteContent = {
+  seo: {
+    siteName: "HEGXAI",
+    defaultTitle: "HEGXAI | AI Automation Agency for Businesses",
+    titleTemplate: "%s | HEGXAI",
+    description:
+      "HEGXAI is an AI automation agency engineering intelligent AI agents and custom workflow automation to remove repetitive operations for modern businesses.",
+    applicationName: "HEGXAI",
+    locale: "en_US",
+    ogImageAlt: "HEGXAI — Every Task. Automated.",
+    pages: {
+      home: {
+        title: "HEGXAI | AI Automation Agency for Businesses",
+        description:
+          "HEGXAI is an AI automation agency engineering intelligent AI agents and custom workflow automation to remove repetitive operations for modern businesses.",
+        canonical: "/",
+      },
+      services: {
+        title: "AI Automation Services",
+        description:
+          "Custom AI automation services from HEGXAI: domain-trained AI agents, multi-step workflow automation, CRM integrations, and business process automation.",
+        canonical: "/services",
+      },
+      privacy: {
+        title: "Privacy Policy",
+        description:
+          "Review the Privacy Policy for HEGXAI. Learn how our AI automation agency protects and handles information submitted through our website and audit bookings.",
+        canonical: "/privacy",
+      },
+      terms: {
+        title: "Terms of Service",
+        description:
+          "Read the Terms of Service for HEGXAI. Understand the website terms, intellectual property, and engagement conditions for our AI workflow automation agency.",
+        canonical: "/terms",
+      },
+      thanks: {
+        title: "Confirmation",
+        description:
+          "Thank you for reaching out to HEGXAI. We have received your submission and will follow up to map your automation requirements.",
+      },
+    },
+  },
   logo: {
     showWordmark: true,
   },

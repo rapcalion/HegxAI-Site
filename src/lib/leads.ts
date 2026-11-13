@@ -27,8 +27,13 @@ export async function saveLead(lead: Lead): Promise<void> {
     const toEmail = process.env.LEAD_TO_EMAIL;
     const fromEmail = process.env.LEAD_FROM_EMAIL;
 
-    if (!apiKey || !toEmail || !fromEmail) {
-      console.warn("[saveLead] Resend env vars not configured for Cal.com booking notification");
+    const missingEnv: string[] = [];
+    if (!apiKey) missingEnv.push("RESEND_API_KEY");
+    if (!toEmail) missingEnv.push("LEAD_TO_EMAIL");
+    if (!fromEmail) missingEnv.push("LEAD_FROM_EMAIL");
+
+    if (missingEnv.length > 0) {
+      console.warn(`[saveLead] Missing env vars: ${missingEnv.join(", ")}`);
       return;
     }
 
@@ -65,7 +70,15 @@ export async function saveLead(lead: Lead): Promise<void> {
       });
 
       if (!res.ok) {
-        console.error(`[saveLead] Resend API error: ${res.status}`);
+        let errData: { name?: string; message?: string } | null = null;
+        try {
+          errData = (await res.json()) as { name?: string; message?: string };
+        } catch {
+          // ignore parsing error if non-JSON
+        }
+        console.error(
+          `[saveLead] Resend API error: status=${res.status} name=${errData?.name ?? "unknown"} message=${errData?.message ?? "unknown"}`
+        );
       } else {
         console.info(`[saveLead] Booking email sent for ${redactLead(safeName, safeEmail)}`);
       }

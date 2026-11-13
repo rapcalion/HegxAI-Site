@@ -9,7 +9,8 @@ import Footer from "@/components/sections/Footer";
 import ThanksAuditButton from "@/components/ui/ThanksAuditButton";
 
 export const metadata: Metadata = {
-  title: "Thanks | HEGXAI",
+  title: siteContent.seo.pages.thanks.title,
+  description: siteContent.seo.pages.thanks.description,
   robots: {
     index: false,
     follow: false,

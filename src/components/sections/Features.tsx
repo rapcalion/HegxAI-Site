@@ -205,7 +205,7 @@ export default function Features() {
                 </div>
 
                 {/* Title */}
-                <h3
+                <h2
                   style={{
                     fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
                     fontSize: "18px",
@@ -217,7 +217,7 @@ export default function Features() {
                   }}
                 >
                   {item.title}
-                </h3>
+                </h2>
 
                 {/* 2-line paragraph */}
                 <p

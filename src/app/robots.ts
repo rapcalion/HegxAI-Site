@@ -1,13 +1,28 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL, HAS_ENV_SITE_URL } from "@/lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const isStagingOrMissing =
+    !HAS_ENV_SITE_URL ||
+    SITE_URL.includes("localhost") ||
+    SITE_URL.includes("vercel.app");
+
+  if (isStagingOrMissing) {
+    return {
+      rules: {
+        userAgent: "*",
+        disallow: "/",
+      },
+      sitemap: `${SITE_URL}/sitemap.xml`,
+    };
+  }
+
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/thanks"],
+      disallow: ["/api/", "/thanks"],
     },
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
