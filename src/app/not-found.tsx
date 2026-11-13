@@ -54,10 +54,11 @@ export default function NotFound() {
             <LogoMark height={32} />
             <span
               style={{
-                fontFamily: "var(--ff-logo, 'Anton', sans-serif)",
-                fontSize: "26px",
+                fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
+                fontWeight: 700,
+                fontSize: "24px",
                 lineHeight: 1,
-                letterSpacing: "0.02em",
+                letterSpacing: "-0.03em",
                 color: "var(--ink, #141414)",
               }}
             >

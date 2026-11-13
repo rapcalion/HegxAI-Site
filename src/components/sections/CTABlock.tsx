@@ -2,14 +2,10 @@
 
 import { useRef, useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn, Button } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,23 +30,55 @@ export default function CTABlock() {
     mountTsRef.current = Date.now();
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
 
-    gsap.fromTo(
-      cardRef.current,
-      { scale: 0.97, opacity: 0.85 },
-      {
-        scale: 1,
-        opacity: 1,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: cardRef.current,
-          start: "top 90%",
-          end: "top 55%",
-          scrub: 1,
-        },
-      }
+    const el = cardRef.current;
+    if (!el) return;
+
+    let st: { kill?: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+              st = gsap.fromTo(
+                el,
+                { scale: 0.97, opacity: 0.85 },
+                {
+                  scale: 1,
+                  opacity: 1,
+                  ease: "power2.out",
+                  scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                    end: "top 55%",
+                    scrub: 1,
+                  },
+                }
+              );
+            }
+          );
+        }
+      },
+      { rootMargin: "200px" }
     );
+
+    observer.observe(el);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      st?.kill?.();
+    };
   }, []);
 
   const handleBookingClick = (e: React.MouseEvent<HTMLElement>) => {

@@ -1,15 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function Pricing() {
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
@@ -18,23 +14,63 @@ export default function Pricing() {
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
-
-    gsap.fromTo(
-      sectionRef.current,
-      { opacity: 0, y: 40 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 85%",
-          toggleActions: "play none none none",
-        },
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) {
+      if (sectionRef.current) {
+        sectionRef.current.style.opacity = "1";
+        sectionRef.current.style.transform = "none";
       }
+      return;
+    }
+
+    const el = sectionRef.current;
+    if (!el) return;
+
+    el.style.opacity = "0";
+
+    let st: { kill?: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+              st = gsap.fromTo(
+                el,
+                { opacity: 0, y: 40 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.9,
+                  ease: "power3.out",
+                  scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                    toggleActions: "play none none none",
+                  },
+                }
+              );
+            }
+          );
+        }
+      },
+      { rootMargin: "200px" }
     );
+
+    observer.observe(el);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      st?.kill?.();
+    };
   }, []);
 
   const tiers = siteContent.pricingTiers;
@@ -47,7 +83,6 @@ export default function Pricing() {
       theme="cream"
       style={{
         background: "var(--bg)",
-        opacity: 0,
       }}
     >
       <SectionColumn style={{ padding: "0 var(--col-pad, 24px)", width: "100%" }}>

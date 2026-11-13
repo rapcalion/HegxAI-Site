@@ -150,7 +150,7 @@ export default function GlyphField({
     let targetCrossY = 0;
     let pointerDecay = 0;
 
-    // Check media
+    // Check media - skip completely on mobile, coarse pointer, or reduced motion
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
@@ -158,6 +158,11 @@ export default function GlyphField({
       window.matchMedia("(pointer: coarse)").matches ||
       "ontouchstart" in window ||
       navigator.maxTouchPoints > 0;
+    const isMobile = window.innerWidth < 768;
+
+    if (prefersReducedMotion || isTouch || isMobile) {
+      return;
+    }
 
     // Cell size calculation: desktop 12px, tablet 12px, mobile 14px
     let baseCellSize = window.innerWidth < 768 ? 14 : 12;

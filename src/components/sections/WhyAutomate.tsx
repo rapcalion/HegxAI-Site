@@ -1,16 +1,11 @@
 "use client";
-import React, { useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import React, { useRef, useEffect } from "react";
 import { SectionBar, SectionColumn, StickyTag } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import { useBooking } from "@/components/ui/BookingProvider";
 import AsciiHalftoneCanvas from "@/components/ui/AsciiHalftoneCanvas";
 import StarShape from "@/components/ui/StarShape";
 import { siteContent, type WhyAutomateStat } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 function getAriaLabel(value: string, suffix?: string): string {
   if (!suffix) return value;
@@ -19,6 +14,10 @@ function getAriaLabel(value: string, suffix?: string): string {
   return `${value} ${s}`;
 }
 
+const STATS: WhyAutomateStat[] = siteContent.whyAutomate?.stats || [];
+const STAT1 = STATS[0];
+const STAIRCASE_STATS = STATS.slice(1);
+
 export default function WhyAutomate() {
   const { openBooking, preloadBooking, bookingUrl } = useBooking();
   const sectionRef = useRef<HTMLElement>(null);
@@ -26,9 +25,9 @@ export default function WhyAutomate() {
   const stairNumberRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   const whyData = siteContent.whyAutomate;
-  const stats: WhyAutomateStat[] = whyData?.stats || [];
-  const stat1 = stats[0];
-  const staircaseStats = stats.slice(1);
+  const stats = STATS;
+  const stat1 = STAT1;
+  const staircaseStats = STAIRCASE_STATS;
 
   // Dynamic footnote sources calculation (unique sources with proper URL and forecast flags)
   const seenSources = new Set<string>();
@@ -53,95 +52,124 @@ export default function WhyAutomate() {
     }
   });
 
-  useGSAP(
-    () => {
-      if (!stats || stats.length === 0) return;
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReduced) return;
+  useEffect(() => {
+    if (!STATS || STATS.length === 0) return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
 
-      if (!prefersReduced) {
-        gsap.set(".why-stair-col-inner", { y: 40, opacity: 0 });
-        gsap.set(".why-stair-line", { scaleY: 0, transformOrigin: "top" });
-        if (bigNumberRef.current) bigNumberRef.current.textContent = "0";
-        stairNumberRefs.current.forEach((el) => {
-          if (el) el.textContent = "0";
-        });
-      }
+    const el = sectionRef.current;
+    if (!el) return;
 
-      // When the block enters (top 70%), numbers count up from 0 to their value (1.2s, power3.out, tabular-nums)
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top 70%",
-        once: true,
-        onEnter: () => {
-          // 1. Big Stat (#1) count-up: counts up first
-          const s1Target = parseInt(stat1.value, 10);
-          if (!isNaN(s1Target)) {
-            const s1Obj = { val: 0 };
-            gsap.to(s1Obj, {
-              val: s1Target,
-              duration: 1.2,
-              ease: "power3.out",
-              onUpdate: () => {
-                if (bigNumberRef.current) {
-                  bigNumberRef.current.textContent = Math.round(s1Obj.val).toString();
-                }
-              },
-            });
-          }
+    let ctx: { revert: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
 
-          // 2. Staircase columns rise from +40px with opacity 0 -> 1, staggered 0.12s
-          gsap.fromTo(
-            ".why-stair-col-inner",
-            { y: 40, opacity: 0 },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 0.9,
-              ease: "power3.out",
-              stagger: 0.12,
-              delay: 0.1,
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+
+              ctx = gsap.context(() => {
+                gsap.set(".why-stair-col-inner", { y: 40, opacity: 0 });
+                gsap.set(".why-stair-line", { scaleY: 0, transformOrigin: "top" });
+                if (bigNumberRef.current) bigNumberRef.current.textContent = "0";
+                stairNumberRefs.current.forEach((item) => {
+                  if (item) item.textContent = "0";
+                });
+
+                ScrollTrigger.create({
+                  trigger: sectionRef.current,
+                  start: "top 70%",
+                  once: true,
+                  onEnter: () => {
+                    // 1. Big Stat (#1) count-up: counts up first
+                    const s1Target = parseInt(STAT1.value, 10);
+                    if (!isNaN(s1Target)) {
+                      const s1Obj = { val: 0 };
+                      gsap.to(s1Obj, {
+                        val: s1Target,
+                        duration: 1.2,
+                        ease: "power3.out",
+                        onUpdate: () => {
+                          if (bigNumberRef.current) {
+                            bigNumberRef.current.textContent = Math.round(s1Obj.val).toString();
+                          }
+                        },
+                      });
+                    }
+
+                    // 2. Staircase columns rise from +40px with opacity 0 -> 1, staggered 0.12s
+                    gsap.fromTo(
+                      ".why-stair-col-inner",
+                      { y: 40, opacity: 0 },
+                      {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.9,
+                        ease: "power3.out",
+                        stagger: 0.12,
+                        delay: 0.1,
+                      }
+                    );
+
+                    // 3. Vertical lines draw downward (scaleY 0 -> 1, origin top, 0.8s)
+                    gsap.fromTo(
+                      ".why-stair-line",
+                      { scaleY: 0 },
+                      {
+                        scaleY: 1,
+                        transformOrigin: "top",
+                        duration: 0.8,
+                        ease: "power3.out",
+                        stagger: 0.12,
+                        delay: 0.1,
+                      }
+                    );
+
+                    // 4. Staircase numbers count up (staggered with column entrance)
+                    STAIRCASE_STATS.forEach((st, idx) => {
+                      const targetVal = parseInt(st.value, 10);
+                      if (!isNaN(targetVal)) {
+                        const numObj = { val: 0 };
+                        const itemEl = stairNumberRefs.current[idx];
+                        gsap.to(numObj, {
+                          val: targetVal,
+                          duration: 1.2,
+                          ease: "power3.out",
+                          delay: 0.15 + idx * 0.12,
+                          onUpdate: () => {
+                            if (itemEl) {
+                              itemEl.textContent = Math.round(numObj.val).toString();
+                            }
+                          },
+                        });
+                      }
+                    });
+                  },
+                });
+              }, sectionRef);
             }
           );
+        }
+      },
+      { rootMargin: "200px" }
+    );
 
-          // 3. Vertical lines draw downward (scaleY 0 -> 1, origin top, 0.8s)
-          gsap.fromTo(
-            ".why-stair-line",
-            { scaleY: 0 },
-            {
-              scaleY: 1,
-              transformOrigin: "top",
-              duration: 0.8,
-              ease: "power3.out",
-              stagger: 0.12,
-              delay: 0.1,
-            }
-          );
+    observer.observe(el);
 
-          // 4. Staircase numbers count up (staggered with column entrance)
-          staircaseStats.forEach((st, idx) => {
-            const targetVal = parseInt(st.value, 10);
-            if (!isNaN(targetVal)) {
-              const numObj = { val: 0 };
-              const el = stairNumberRefs.current[idx];
-              gsap.to(numObj, {
-                val: targetVal,
-                duration: 1.2,
-                ease: "power3.out",
-                delay: 0.15 + idx * 0.12,
-                onUpdate: () => {
-                  if (el) {
-                    el.textContent = Math.round(numObj.val).toString();
-                  }
-                },
-              });
-            }
-          });
-        },
-      });
-    },
-    { scope: sectionRef }
-  );
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      ctx?.revert();
+    };
+  }, []);
 
   if (!stats || stats.length === 0) {
     return null;

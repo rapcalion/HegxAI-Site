@@ -1,17 +1,12 @@
-"use client";
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import HeroWorkflowCard from "./HeroWorkflowCard";
-import GlyphField from "@/components/hero/GlyphField";
-import { Button } from "@/components/ui/shared";
-import { useBooking } from "@/components/ui/BookingProvider";
+import dynamic from "next/dynamic";
 import Marquee from "@/components/ui/Marquee";
 import StarShape from "@/components/ui/StarShape";
 import { siteContent } from "@/content/site";
 
-gsap.registerPlugin(ScrollTrigger);
+const HeroWorkflowCard = dynamic(() => import("./HeroWorkflowCard"));
+const HeroCta = dynamic(() => import("@/components/hero/HeroCta"));
+const HeroDesktopConnector = dynamic(() => import("@/components/hero/HeroDesktopConnector"));
+const HeroDesktopGlyphField = dynamic(() => import("@/components/hero/HeroDesktopGlyphField"));
 
 const MARQUEE_ITEMS = [
   "WORKFLOWS",
@@ -25,137 +20,10 @@ const MARQUEE_ITEMS = [
 ];
 
 export default function Hero() {
-  const { openBooking, preloadBooking, bookingUrl } = useBooking();
-  const sectionRef = useRef<HTMLElement>(null);
-  const headlineLine1Ref = useRef<HTMLDivElement>(null);
-  const headlineLine2Ref = useRef<HTMLDivElement>(null);
-  const highlightBoxRef = useRef<HTMLSpanElement>(null);
-  const subRef = useRef<HTMLParagraphElement>(null);
-  const ctaWrapRef = useRef<HTMLDivElement>(null);
-
-  // Dashed connector SVG refs
-  const connectorPathRef = useRef<SVGPathElement>(null);
-  const maskPathRef = useRef<SVGPathElement>(null);
-  const dotRef = useRef<SVGCircleElement>(null);
-
-  useGSAP(
-    () => {
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      if (prefersReduced) {
-        if (highlightBoxRef.current) highlightBoxRef.current.style.clipPath = "inset(0 0% 0 0)";
-        if (maskPathRef.current) maskPathRef.current.style.strokeDashoffset = "0";
-        return;
-      }
-
-      // 1. Text entrance & Highlight box clip-path reveal
-      const isMobile = window.innerWidth < 768;
-      const tl = gsap.timeline({ delay: isMobile ? 0 : 0.08 });
-
-      tl.fromTo(
-        headlineLine1Ref.current,
-        { y: "110%", opacity: 0 },
-        { y: "0%", opacity: 1, duration: isMobile ? 0.45 : 0.85, ease: "power4.out", clearProps: "transform" }
-      )
-        .fromTo(
-          headlineLine2Ref.current,
-          { y: "110%", opacity: 0 },
-          { y: "0%", opacity: 1, duration: isMobile ? 0.45 : 0.85, ease: "power4.out", clearProps: "transform" },
-          isMobile ? "-=0.35" : "-=0.65"
-        )
-        .to(
-          highlightBoxRef.current,
-          {
-            clipPath: "inset(0 0% 0 0)",
-            duration: isMobile ? 0.45 : 0.75,
-            ease: "power3.out",
-          },
-          isMobile ? "-=0.25" : "-=0.35"
-        )
-        .fromTo(
-          subRef.current,
-          { opacity: 0, y: isMobile ? 8 : 16 },
-          { opacity: 1, y: 0, duration: isMobile ? 0.35 : 0.55, ease: "power3.out" },
-          isMobile ? "-=0.25" : "-=0.35"
-        )
-        .fromTo(
-          ctaWrapRef.current,
-          { opacity: 0, y: isMobile ? 10 : 18 },
-          { opacity: 1, y: 0, duration: isMobile ? 0.4 : 0.65, ease: "power3.out" },
-          isMobile ? "-=0.2" : "-=0.35"
-        );
-
-      // 2. Dashed connector line progressive reveal using mask
-      if (maskPathRef.current) {
-        gsap.fromTo(
-          maskPathRef.current,
-          { strokeDashoffset: 1 },
-          {
-            strokeDashoffset: 0,
-            duration: 1.8,
-            delay: 0.4,
-            ease: "power2.inOut",
-          }
-        );
-      }
-    },
-    { scope: sectionRef }
-  );
-
-  // 6. Connector accent dot traveling along the path (gsap.ticker, paused when offscreen)
-  useEffect(() => {
-    const path = connectorPathRef.current;
-    const dot = dotRef.current;
-    const hero = sectionRef.current;
-    if (!path || !dot || !hero) return;
-
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
-
-    let totalLength = 0;
-    try {
-      totalLength = path.getTotalLength();
-    } catch {
-      return;
-    }
-    if (totalLength <= 0) return;
-
-    let isVisible = false;
-    let loopProgress = 0;
-    const loopDuration = 12; // 12-second full traversal loop
-
-    const tickHandler = (_time: number, deltaTime: number) => {
-      if (!isVisible) return;
-      loopProgress += deltaTime / 1000 / loopDuration;
-      if (loopProgress > 1) loopProgress -= 1;
-
-      const currentDistance = loopProgress * totalLength;
-      const pt = path.getPointAtLength(currentDistance);
-      dot.setAttribute("cx", pt.x.toString());
-      dot.setAttribute("cy", pt.y.toString());
-    };
-
-    gsap.ticker.add(tickHandler);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        isVisible = entry.isIntersecting;
-      },
-      { rootMargin: "100px" }
-    );
-    observer.observe(hero);
-
-    return () => {
-      gsap.ticker.remove(tickHandler);
-      observer.disconnect();
-    };
-  }, []);
-
   return (
     <section
       id="hero"
       aria-labelledby="hero-title"
-      ref={sectionRef}
       style={{
         display: "block",
         minHeight: "100svh",
@@ -228,64 +96,8 @@ export default function Hero() {
           padding: "0 var(--col-pad, 24px)",
         }}
       >
-        {/* ─── 3. DASHED CONNECTOR SVG (Wraps subtitle + CTA, does NOT cross headline/highlight box) ─── */}
-        <div
-          style={{
-            position: "absolute",
-            top: "188px",
-            left: 0,
-            width: "100%",
-            height: "220px",
-            pointerEvents: "none",
-            zIndex: 2,
-          }}
-          className="hidden min-[900px]:block"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 1200 220"
-            width="100%"
-            height="100%"
-            fill="none"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <mask id="hero-connector-mask" maskUnits="userSpaceOnUse">
-                <path
-                  ref={maskPathRef}
-                  d="M 40 10 L 280 10 C 360 10, 380 190, 460 190 L 740 190 C 820 190, 840 10, 920 10 L 1160 10"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  pathLength={1}
-                  strokeDasharray="1 1"
-                  strokeDashoffset={1}
-                />
-              </mask>
-            </defs>
-
-            {/* Dashed connector path revealed through mask */}
-            <path
-              ref={connectorPathRef}
-              d="M 40 10 L 280 10 C 360 10, 380 190, 460 190 L 740 190 C 820 190, 840 10, 920 10 L 1160 10"
-              fill="none"
-              stroke="rgba(20, 20, 20, 0.35)"
-              strokeWidth="1"
-              strokeDasharray="6 8"
-              mask="url(#hero-connector-mask)"
-            />
-
-            {/* Traveling 6px accent dot */}
-            <circle
-              ref={dotRef}
-              cx="40"
-              cy="10"
-              r="3"
-              fill="var(--accent)"
-            />
-          </svg>
-        </div>
+        {/* ─── 3. DASHED CONNECTOR SVG (Desktop only) ─── */}
+        <HeroDesktopConnector />
 
         {/* ─── 1. HEADLINE (Single H1, 2 lines, Inter Tight 500, tight gradient box on AUTOMATED.) ─── */}
         <h1
@@ -306,7 +118,7 @@ export default function Hero() {
         >
           <span style={{ display: "block", overflow: "hidden", marginBottom: "4px" }}>
             <span
-              ref={headlineLine1Ref}
+              className="hero-headline-line-1"
               style={{ display: "block" }}
             >
               EVERY TASK.
@@ -315,12 +127,12 @@ export default function Hero() {
 
           <span style={{ display: "block", overflow: "hidden" }}>
             <span
-              ref={headlineLine2Ref}
+              className="hero-headline-line-2"
               style={{ display: "block" }}
             >
               {/* Tight gradient box with 4 tiny 6px ink squares on corners */}
               <span
-                ref={highlightBoxRef}
+                className="hero-highlight-box"
                 style={{
                   background: "var(--accent-grad)",
                   color: "#ffffff",
@@ -328,8 +140,6 @@ export default function Hero() {
                   display: "inline-block",
                   position: "relative",
                   whiteSpace: "nowrap",
-                  clipPath: "inset(0 100% 0 0)",
-                  willChange: "clip-path",
                   boxShadow: "0 4px 20px color-mix(in srgb, var(--accent) 35%, transparent)",
                 }}
               >
@@ -386,58 +196,24 @@ export default function Hero() {
 
         {/* ─── 2. THIN INK DASH & SUBTITLE (Gap: 24px -> dash -> 20px -> sub -> 36px -> CTA) ─── */}
         <p
-          ref={subRef}
+          className="hero-subtitle"
           style={{
-            fontFamily: "var(--ff-body, 'DM Sans', sans-serif)",
+            fontFamily: "var(--ff-display, 'Inter Tight', sans-serif)",
             fontSize: "clamp(18px, 1.6vw, 22px)",
             color: "rgba(20, 20, 20, 0.72)",
             maxWidth: "560px",
             margin: "20px auto 32px",
             lineHeight: 1.5,
-            opacity: 0,
           }}
         >
           {siteContent.hero.subtitle}
         </p>
 
         {/* ─── 3. CTA WITH CORNER BRACKETS ─── */}
-        <div
-          ref={ctaWrapRef}
-          className="hero-cta-wrapper"
-          style={{
-            position: "relative",
-            zIndex: 10,
-            marginBottom: "64px",
-            opacity: 0,
-            overflow: "hidden",
-            display: "inline-block",
-            padding: "4px",
-            width: "100%",
-            maxWidth: "320px",
-          }}
-        >
-          <Button
-            href={bookingUrl || "#contact"}
-            variant="primary"
-            brackets={true}
-            style={{ width: "100%", justifyContent: "center" }}
-            onClick={(e) => {
-              if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-                e.preventDefault();
-                openBooking();
-              }
-            }}
-            onPointerEnter={preloadBooking}
-            onFocus={preloadBooking}
-          >
-            Book a free audit
-          </Button>
-        </div>
+        <HeroCta />
 
         {/* ─── 5. TWO THIN HORIZONTAL LINES WITH MONO LABELS ─── */}
         <div style={{ width: "100%", position: "relative", zIndex: 3 }}>
-          {/* Top Line 1 (1px ink at 25%) */}
-          {/* Top Line 1 (1px grid-line) */}
           <div
             style={{
               position: "relative",
@@ -472,7 +248,6 @@ export default function Hero() {
             />
           </div>
 
-          {/* Strip between lines */}
           <div
             className="hero-strip-bar"
             style={{
@@ -510,7 +285,6 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* Bottom Line 2 (1px grid-line) */}
           <div
             style={{
               position: "relative",
@@ -550,8 +324,8 @@ export default function Hero() {
         <HeroWorkflowCard />
       </div>
 
-      {/* ─── 7. ANIMATED GLYPH FIELD BAND (ASCII/dot-matrix with floating chips & crosshair) ─── */}
-      <GlyphField />
+      {/* ─── 7. ANIMATED GLYPH FIELD BAND (Desktop only, skipped on mobile) ─── */}
+      <HeroDesktopGlyphField />
 
       {/* ─── 6. MARQUEE STRIP UNDER HERO (11px mono, 40% opacity) ─── */}
       <div

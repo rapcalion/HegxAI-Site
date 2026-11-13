@@ -1,15 +1,11 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, StickyTag } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
 import { useBooking } from "@/components/ui/BookingProvider";
 import { siteContent } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const FOUNDER_BLUR_URL =
   "data:image/jpeg;base64,/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAQABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAwIE/8QAJBAAAgEEAQIHAAAAAAAAAAAAAQIDABESIQQFQRMiMVFhccH/xAAUAQEAAAAAAAAAAAAAAAAAAAAC/8QAFxEBAQEBAAAAAAAAAAAAAAAAAQBBEf/aAAwDAQACEQMRAD8Ayuw0EuxY28m7D3pRmAfEjYJYFZCLBr/tXByJeMSyZoSN4qGVt+hH1RcvqbSI4lMpfG0asAqqbnePfXf5ogOyemX/2Q==";
@@ -35,146 +31,177 @@ export default function About() {
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
 
-    const ctx = gsap.context(() => {
-      // 1. Accent Tag entrance
-      if (tagRef.current) {
-        gsap.fromTo(
-          tagRef.current,
-          { x: -24, opacity: 0 },
-          {
-            x: 0,
-            opacity: 1,
-            duration: 0.7,
-            ease: "back.out(1.4)",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
-              toggleActions: "play none none none",
-            },
-          }
-        );
+    const el = sectionRef.current;
+    if (!el) return;
 
-        // Chevrons stagger in
-        const chevrons = tagRef.current.querySelectorAll(".chevron-arrow");
-        if (chevrons.length > 0) {
-          gsap.fromTo(
-            chevrons,
-            { x: -8, opacity: 0 },
-            {
-              x: 0,
-              opacity: 1,
-              duration: 0.4,
-              stagger: 0.08,
-              ease: "power2.out",
-              delay: 0.3,
-              scrollTrigger: {
-                trigger: sectionRef.current,
-                start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
-                toggleActions: "play none none none",
-              },
-            }
-          );
-        }
-      }
+    let ctx: { revert: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
 
-      // 2. Headline line-by-line reveal & gray span color transition
-      if (headlineRef.current) {
-        const lines = headlineRef.current.querySelectorAll(".headline-reveal-line");
-        if (lines.length > 0) {
-          gsap.fromTo(
-            lines,
-            { y: "110%" },
-            {
-              y: "0%",
-              duration: 0.8,
-              stagger: 0.08,
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: headlineRef.current,
-                start: () => (window.innerWidth < 768 ? "top 95%" : "top 82%"),
-                toggleActions: "play none none none",
-              },
-              onComplete: () => {
-                if (graySpanRef.current) {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+
+              ctx = gsap.context(() => {
+                // 1. Accent Tag entrance
+                if (tagRef.current) {
                   gsap.fromTo(
-                    graySpanRef.current,
-                    { color: "#8f8c83" },
-                    { color: "#757269", duration: 0.6, ease: "power2.out" }
+                    tagRef.current,
+                    { x: -24, opacity: 0 },
+                    {
+                      x: 0,
+                      opacity: 1,
+                      duration: 0.7,
+                      ease: "back.out(1.4)",
+                      scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
+                        toggleActions: "play none none none",
+                      },
+                    }
+                  );
+
+                  // Chevrons stagger in
+                  const chevrons = tagRef.current.querySelectorAll(".chevron-arrow");
+                  if (chevrons.length > 0) {
+                    gsap.fromTo(
+                      chevrons,
+                      { x: -8, opacity: 0 },
+                      {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.4,
+                        stagger: 0.08,
+                        ease: "power2.out",
+                        delay: 0.3,
+                        scrollTrigger: {
+                          trigger: sectionRef.current,
+                          start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
+                          toggleActions: "play none none none",
+                        },
+                      }
+                    );
+                  }
+                }
+
+                // 2. Headline line-by-line reveal & gray span color transition
+                if (headlineRef.current) {
+                  const lines = headlineRef.current.querySelectorAll(".headline-reveal-line");
+                  if (lines.length > 0) {
+                    gsap.fromTo(
+                      lines,
+                      { y: "110%" },
+                      {
+                        y: "0%",
+                        duration: 0.8,
+                        stagger: 0.08,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                          trigger: headlineRef.current,
+                          start: () => (window.innerWidth < 768 ? "top 95%" : "top 82%"),
+                          toggleActions: "play none none none",
+                        },
+                        onComplete: () => {
+                          if (graySpanRef.current) {
+                            gsap.fromTo(
+                              graySpanRef.current,
+                              { color: "#8f8c83" },
+                              { color: "#757269", duration: 0.6, ease: "power2.out" }
+                            );
+                          }
+                        },
+                      }
+                    );
+                  }
+                }
+
+                // 2b. Founder portrait entrance (fade/slide up with scale-in)
+                if (founderRef.current) {
+                  gsap.fromTo(
+                    founderRef.current,
+                    { opacity: 0, y: 16, scale: 0.96 },
+                    {
+                      opacity: 1,
+                      y: 0,
+                      scale: 1,
+                      duration: 0.75,
+                      ease: "power3.out",
+                      delay: 0.2,
+                      scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
+                        toggleActions: "play none none none",
+                      },
+                    }
                   );
                 }
-              },
+
+                // 3. Text Columns: lines scaleY from top, text fades up (no square handles)
+                const dividerLines = [col1LineRef.current, col2LineRef.current].filter(Boolean);
+                const textBlocks = [col1TextRef.current, col2TextRef.current].filter(Boolean);
+
+                if (dividerLines.length > 0) {
+                  gsap.fromTo(
+                    dividerLines,
+                    { scaleY: 0 },
+                    {
+                      scaleY: 1,
+                      transformOrigin: "top",
+                      duration: 0.8,
+                      ease: "power3.out",
+                      scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: () => (window.innerWidth < 768 ? "top 95%" : "top 75%"),
+                        toggleActions: "play none none none",
+                      },
+                    }
+                  );
+                }
+
+                if (textBlocks.length > 0) {
+                  gsap.fromTo(
+                    textBlocks,
+                    { opacity: 0, y: 16 },
+                    {
+                      opacity: 1,
+                      y: 0,
+                      duration: 0.7,
+                      stagger: 0.1,
+                      ease: "power3.out",
+                      delay: 0.35,
+                      scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: () => (window.innerWidth < 768 ? "top 95%" : "top 75%"),
+                        toggleActions: "play none none none",
+                      },
+                    }
+                  );
+                }
+              }, sectionRef);
             }
           );
         }
-      }
+      },
+      { rootMargin: "200px" }
+    );
 
-      // 2b. Founder portrait entrance (fade/slide up with scale-in)
-      if (founderRef.current) {
-        gsap.fromTo(
-          founderRef.current,
-          { opacity: 0, y: 16, scale: 0.96 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.75,
-            ease: "power3.out",
-            delay: 0.2,
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: () => (window.innerWidth < 768 ? "top 95%" : "top 80%"),
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }
+    observer.observe(el);
 
-      // 3. Text Columns: lines scaleY from top, text fades up (no square handles)
-      const dividerLines = [col1LineRef.current, col2LineRef.current].filter(Boolean);
-      const textBlocks = [col1TextRef.current, col2TextRef.current].filter(Boolean);
-
-      if (dividerLines.length > 0) {
-        gsap.fromTo(
-          dividerLines,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            transformOrigin: "top",
-            duration: 0.8,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: () => (window.innerWidth < 768 ? "top 95%" : "top 75%"),
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }
-
-      if (textBlocks.length > 0) {
-        gsap.fromTo(
-          textBlocks,
-          { opacity: 0, y: 16 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            stagger: 0.1,
-            ease: "power3.out",
-            delay: 0.35,
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: () => (window.innerWidth < 768 ? "top 95%" : "top 75%"),
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }
-    }, sectionRef);
-
-    return () => ctx.revert();
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      ctx?.revert();
+    };
   }, []);
 
   return (

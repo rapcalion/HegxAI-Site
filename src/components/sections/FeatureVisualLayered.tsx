@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { gsap } from "gsap";
 import FeatureTextureCanvas from "./FeatureTextureCanvas";
 import FeatureCardA from "./FeatureCardA";
 import FeatureCardB from "./FeatureCardB";
@@ -65,72 +64,74 @@ export default function FeatureVisualLayered({
 
     isTransitioningRef.current = true;
 
-    const targets = [
-      cardAAnimRef.current,
-      cardBAnimRef.current,
-      chipAnimRef.current,
-    ].filter(Boolean);
+    import("gsap").then(({ gsap }) => {
+      const targets = [
+        cardAAnimRef.current,
+        cardBAnimRef.current,
+        chipAnimRef.current,
+      ].filter(Boolean);
 
-    // Step 1: Outgoing cards fade + slide 12px (0.2s)
-    gsap.to(targets, {
-      opacity: 0,
-      y: -12,
-      duration: 0.2,
-      ease: "power2.in",
-      onComplete: () => {
-        // Swap displayed data
-        setDisplayedIdx(activeIndex);
+      // Step 1: Outgoing cards fade + slide 12px (0.2s)
+      gsap.to(targets, {
+        opacity: 0,
+        y: -12,
+        duration: 0.2,
+        ease: "power2.in",
+        onComplete: () => {
+          // Swap displayed data
+          setDisplayedIdx(activeIndex);
 
-        // Step 2: Incoming cards enter staggered (A at 0, B at 0.12s, Chip at 0.20s, 0.4s each)
-        if (cardAAnimRef.current) {
-          gsap.fromTo(
-            cardAAnimRef.current,
-            { opacity: 0, y: 12 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.4,
-              delay: 0,
-              ease: "power2.out",
-            }
-          );
-        }
+          // Step 2: Incoming cards enter staggered (A at 0, B at 0.12s, Chip at 0.20s, 0.4s each)
+          if (cardAAnimRef.current) {
+            gsap.fromTo(
+              cardAAnimRef.current,
+              { opacity: 0, y: 12 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                delay: 0,
+                ease: "power2.out",
+              }
+            );
+          }
 
-        if (cardBAnimRef.current) {
-          gsap.fromTo(
-            cardBAnimRef.current,
-            { opacity: 0, y: 12 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.4,
-              delay: 0.12,
-              ease: "power2.out",
-            }
-          );
-        }
+          if (cardBAnimRef.current) {
+            gsap.fromTo(
+              cardBAnimRef.current,
+              { opacity: 0, y: 12 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                delay: 0.12,
+                ease: "power2.out",
+              }
+            );
+          }
 
-        if (chipAnimRef.current) {
-          gsap.fromTo(
-            chipAnimRef.current,
-            { opacity: 0, y: 12 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.4,
-              delay: 0.2,
-              ease: "power2.out",
-              onComplete: () => {
-                isTransitioningRef.current = false;
-                onTransitionComplete?.();
-              },
-            }
-          );
-        } else {
-          isTransitioningRef.current = false;
-          onTransitionComplete?.();
-        }
-      },
+          if (chipAnimRef.current) {
+            gsap.fromTo(
+              chipAnimRef.current,
+              { opacity: 0, y: 12 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                delay: 0.2,
+                ease: "power2.out",
+                onComplete: () => {
+                  isTransitioningRef.current = false;
+                  onTransitionComplete?.();
+                },
+              }
+            );
+          } else {
+            isTransitioningRef.current = false;
+            onTransitionComplete?.();
+          }
+        },
+      });
     });
   }, [activeIndex, displayedIdx, slideFeature, onTransitionComplete]);
 
@@ -146,35 +147,37 @@ export default function FeatureVisualLayered({
     const normX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
     const normY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
 
-    if (parallaxARef.current) {
-      gsap.to(parallaxARef.current, {
-        x: -normX * 8,
-        y: -normY * 8,
-        duration: 0.45,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    }
+    import("gsap").then(({ gsap }) => {
+      if (parallaxARef.current) {
+        gsap.to(parallaxARef.current, {
+          x: -normX * 8,
+          y: -normY * 8,
+          duration: 0.45,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }
 
-    if (parallaxBRef.current) {
-      gsap.to(parallaxBRef.current, {
-        x: -normX * 14,
-        y: -normY * 14,
-        duration: 0.45,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    }
+      if (parallaxBRef.current) {
+        gsap.to(parallaxBRef.current, {
+          x: -normX * 14,
+          y: -normY * 14,
+          duration: 0.45,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }
 
-    if (parallaxChipRef.current) {
-      gsap.to(parallaxChipRef.current, {
-        x: -normX * 4,
-        y: -normY * 4,
-        duration: 0.45,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    }
+      if (parallaxChipRef.current) {
+        gsap.to(parallaxChipRef.current, {
+          x: -normX * 4,
+          y: -normY * 4,
+          duration: 0.45,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }
+    });
   };
 
   const handleMouseLeave = () => {
@@ -186,12 +189,14 @@ export default function FeatureVisualLayered({
     ].filter(Boolean);
 
     if (targets.length > 0) {
-      gsap.to(targets, {
-        x: 0,
-        y: 0,
-        duration: 0.6,
-        ease: "power2.out",
-        overwrite: "auto",
+      import("gsap").then(({ gsap }) => {
+        gsap.to(targets, {
+          x: 0,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
       });
     }
   };
@@ -217,21 +222,24 @@ export default function FeatureVisualLayered({
       }}
     >
       {/* 1. Clipped texture layer: contains the single GlyphField texture canvas */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "inherit",
-          overflow: "hidden",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      >
-        <FeatureTextureCanvas
-          activeIndex={slideFeature ? siteContent.features.indexOf(slideFeature) : displayedIdx}
-          cellSize={isMobile ? 15 : 13}
-        />
-      </div>
+      {/* 1. Background Canvas - desktop only, skipped on mobile to save multiple rAF canvas loops */}
+      {!isMobile && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "inherit",
+            overflow: "hidden",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        >
+          <FeatureTextureCanvas
+            activeIndex={slideFeature ? siteContent.features.indexOf(slideFeature) : displayedIdx}
+            cellSize={13}
+          />
+        </div>
+      )}
 
       {/* 2. Status Chip: top-right (right 28px, top 28px), z-index 4, hidden on mobile */}
       {!isMobile && (

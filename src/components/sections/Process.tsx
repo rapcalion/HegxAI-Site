@@ -1,11 +1,7 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
-
-gsap.registerPlugin(ScrollTrigger);
 
 // TODO: real testimonials - skip section as instructed
 
@@ -50,52 +46,70 @@ export default function Process() {
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
-
     const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
+
     const section = sectionRef.current;
     if (!section) return;
 
-    let st: ScrollTrigger | null = null;
+    let ctx: { revert: () => void } | undefined;
+    let st: { kill?: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
 
-    const ctx = gsap.context(() => {
-      if (isMobile) {
-        // Mobile does not pin
-      } else {
-        // Desktop: Pin the section and drive step changes on scroll
-        const totalSteps = STEPS.length;
-        st = ScrollTrigger.create({
-          trigger: section,
-          start: "top top",
-          end: "+=700",
-          pin: true,
-          pinSpacing: true,
-          scrub: 0.5,
-          onUpdate: (self) => {
-            const newStep = Math.min(
-              totalSteps - 1,
-              Math.floor(self.progress * totalSteps)
-            );
-            if (newStep !== activeStepRef.current) {
-              activeStepRef.current = newStep;
-              setActiveStep(newStep);
-              // Crossfade detail card
-              if (detailRef.current) {
-                gsap.fromTo(
-                  detailRef.current,
-                  { opacity: 0, y: 16 },
-                  { opacity: 1, y: 0, duration: 0.35, ease: "power3.out", overwrite: "auto" }
-                );
-              }
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+
+              ctx = gsap.context(() => {
+                const totalSteps = STEPS.length;
+                st = ScrollTrigger.create({
+                  trigger: section,
+                  start: "top top",
+                  end: "+=700",
+                  pin: true,
+                  pinSpacing: true,
+                  scrub: 0.5,
+                  onUpdate: (self) => {
+                    const newStep = Math.min(
+                      totalSteps - 1,
+                      Math.floor(self.progress * totalSteps)
+                    );
+                    if (newStep !== activeStepRef.current) {
+                      activeStepRef.current = newStep;
+                      setActiveStep(newStep);
+                      if (detailRef.current) {
+                        gsap.fromTo(
+                          detailRef.current,
+                          { opacity: 0, y: 16 },
+                          { opacity: 1, y: 0, duration: 0.35, ease: "power3.out", overwrite: "auto" }
+                        );
+                      }
+                    }
+                  },
+                });
+              }, sectionRef);
             }
-          },
-        });
-      }
-    }, sectionRef);
+          );
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(section);
 
     return () => {
-      if (st) st.kill();
-      ctx.revert();
+      cancelled = true;
+      observer?.disconnect();
+      if (st && typeof st.kill === "function") st.kill();
+      ctx?.revert();
     };
   }, []);
 

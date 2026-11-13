@@ -1,6 +1,5 @@
 "use client";
 import React, { useRef, useEffect } from "react";
-import { gsap } from "gsap";
 
 interface MarqueeProps {
   children: React.ReactNode;
@@ -35,6 +34,7 @@ export default function Marquee({
     let x = 0;
     let trackWidth = 0;
     let direction = -1; // -1 moves left, 1 moves right
+    let rafId: number | null = null;
     let isTicking = false;
 
     const updateWidth = () => {
@@ -48,7 +48,10 @@ export default function Marquee({
     const effectiveSpeed = isMobile ? Math.min(speed, 0.5) : speed;
 
     const onTick = () => {
-      if (trackWidth <= 0) return;
+      if (trackWidth <= 0) {
+        if (isTicking) rafId = requestAnimationFrame(onTick);
+        return;
+      }
 
       // Access Lenis velocity if available
       const lenis = (window as unknown as { __lenis?: { velocity?: number; direction?: number } }).__lenis;
@@ -76,8 +79,30 @@ export default function Marquee({
         x -= trackWidth;
       }
 
-      gsap.set(track1, { x });
-      gsap.set(track2, { x });
+      track1.style.transform = `translate3d(${x}px, 0, 0)`;
+      track2.style.transform = `translate3d(${x}px, 0, 0)`;
+
+      if (isTicking) {
+        rafId = requestAnimationFrame(onTick);
+      }
+    };
+
+    const startTicker = () => {
+      if (!isTicking) {
+        isTicking = true;
+        updateWidth();
+        rafId = requestAnimationFrame(onTick);
+      }
+    };
+
+    const stopTicker = () => {
+      if (isTicking) {
+        isTicking = false;
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      }
     };
 
     // IntersectionObserver gating: run ticker ONLY while marquee is in viewport
@@ -85,16 +110,9 @@ export default function Marquee({
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          if (!isTicking) {
-            updateWidth();
-            gsap.ticker.add(onTick);
-            isTicking = true;
-          }
+          startTicker();
         } else {
-          if (isTicking) {
-            gsap.ticker.remove(onTick);
-            isTicking = false;
-          }
+          stopTicker();
         }
       },
       { rootMargin: "60px" }
@@ -104,20 +122,16 @@ export default function Marquee({
 
     // Pause when document is hidden
     const handleVisibility = () => {
-      if (document.hidden && isTicking) {
-        gsap.ticker.remove(onTick);
-        isTicking = false;
-      } else if (!document.hidden && !isTicking) {
-        gsap.ticker.add(onTick);
-        isTicking = true;
+      if (document.hidden) {
+        stopTicker();
+      } else {
+        startTicker();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      if (isTicking) {
-        gsap.ticker.remove(onTick);
-      }
+      stopTicker();
       observer.disconnect();
       window.removeEventListener("resize", updateWidth);
       document.removeEventListener("visibilitychange", handleVisibility);

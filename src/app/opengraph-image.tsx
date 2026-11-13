@@ -1,11 +1,14 @@
 import { ImageResponse } from "next/og";
 import { siteContent } from "@/content/site";
+import { getSiteUrl, SITE_URL } from "@/lib/site-url";
 
 export const alt = siteContent.seo.ogImageAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
+  const siteUrl = getSiteUrl();
+  const host = new URL(siteUrl).hostname;
   return new ImageResponse(
     (
       <div
@@ -153,7 +156,7 @@ export default async function Image() {
             letterSpacing: "0.1em",
           }}
         >
-          <span>hegxai.com</span>
+          <span>{host || new URL(SITE_URL).hostname}</span>
           <span style={{ color: "#2F4FD6" }}>Intelligent Agents & Workflows</span>
         </div>
       </div>

@@ -2,15 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/shared";
 import { useBooking } from "@/components/ui/BookingProvider";
 import LogoMark from "@/components/ui/LogoMark";
 import StarShape from "@/components/ui/StarShape";
 import { siteContent } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const NAV_LINKS = [
   { label: "ABOUT", href: "/#about", id: "about" },
@@ -54,65 +50,55 @@ export default function Nav() {
   const showHeader = () => {
     if (!headerRef.current) return;
     isHiddenRef.current = false;
-    gsap.to(headerRef.current, {
-      yPercent: 0,
-      duration: 0.45,
-      ease: "power3.out",
-      overwrite: "auto",
-    });
+    headerRef.current.style.transform = "translateY(0%)";
   };
 
   const hideHeader = () => {
     if (!headerRef.current) return;
     isHiddenRef.current = true;
-    gsap.to(headerRef.current, {
-      yPercent: -100,
-      duration: 0.45,
-      ease: "power3.out",
-      overwrite: "auto",
-    });
+    headerRef.current.style.transform = "translateY(-100%)";
   };
 
   useEffect(() => {
     // 0. Active section tracking (homepage only)
-    if (!isHomePage) return;
+    if (!isHomePage || typeof IntersectionObserver === "undefined") return;
 
-    const triggers: ScrollTrigger[] = [];
-
-    // Clear activeId when Hero is in view
     const heroEl = document.getElementById("hero");
+    let heroObserver: IntersectionObserver | null = null;
     if (heroEl) {
-      const heroST = ScrollTrigger.create({
-        trigger: heroEl,
-        start: "top top",
-        end: "bottom 40%",
-        onEnter: () => setActiveId(""),
-        onEnterBack: () => setActiveId(""),
-      });
-      triggers.push(heroST);
-    }
-
-    NAV_LINKS.forEach((link) => {
-      if (link.href === "/services") return;
-      const el = document.getElementById(link.id);
-      if (!el) return;
-      const st = ScrollTrigger.create({
-        trigger: el,
-        start: "top 40%",
-        end: "bottom 40%",
-        onToggle: (self) => {
-          if (self.isActive) {
-            setActiveId(link.id);
+      heroObserver = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveId("");
           }
         },
-      });
-      triggers.push(st);
+        { rootMargin: "0px 0px -40% 0px" }
+      );
+      heroObserver.observe(heroEl);
+    }
+
+    const sectionIds = ["about", "process", "faq"];
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-30% 0px -50% 0px" }
+    );
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) sectionObserver.observe(el);
     });
 
     return () => {
-      triggers.forEach((t) => t.kill());
+      heroObserver?.disconnect();
+      sectionObserver.disconnect();
     };
-  }, [pathname, isHomePage]);
+  }, [isHomePage]);
 
   useEffect(() => {
     if (isHomePage && typeof window !== "undefined" && window.location.hash) {
@@ -137,78 +123,85 @@ export default function Nav() {
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) {
       if (headerRef.current) {
-        gsap.set(headerRef.current, { yPercent: 0, opacity: 1 });
+        headerRef.current.style.transform = "translateY(0%)";
+        headerRef.current.style.opacity = "1";
       }
       return;
     }
 
+    let cancelled = false;
+
     // 1. Page-load animation: draw in lines from left, then fade up items
-    const tl = gsap.timeline();
-    const desktopLines = [line1Ref.current, line2Ref.current, line3Ref.current].filter(Boolean);
-    const mobileLines = [mobileLine1Ref.current, mobileLine2Ref.current].filter(Boolean);
-    const allLines = [...desktopLines, ...mobileLines];
+    import("gsap").then(({ gsap }) => {
+      if (cancelled) return;
 
-    tl.fromTo(
-      allLines,
-      { scaleX: 0, transformOrigin: "left" },
-      {
-        scaleX: 1,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power3.inOut",
-      }
-    );
+      const tl = gsap.timeline();
+      const desktopLines = [line1Ref.current, line2Ref.current, line3Ref.current].filter(Boolean);
+      const mobileLines = [mobileLine1Ref.current, mobileLine2Ref.current].filter(Boolean);
+      const allLines = [...desktopLines, ...mobileLines];
 
-    const fadeTargets = [
-      logoContentRef.current,
-      navContentRef.current,
-      buttonContentRef.current,
-    ].filter(Boolean);
-
-    if (fadeTargets.length > 0) {
       tl.fromTo(
-        fadeTargets,
-        { opacity: 0, y: 10 },
+        allLines,
+        { scaleX: 0, transformOrigin: "left" },
         {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.08,
-          ease: "power2.out",
-          clearProps: "transform,opacity",
-        },
-        "-=0.4"
+          scaleX: 1,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "power3.inOut",
+        }
       );
-    }
 
-    // 2. ScrollTrigger direction detection (clean & synced with Lenis)
+      const fadeTargets = [
+        logoContentRef.current,
+        navContentRef.current,
+        buttonContentRef.current,
+      ].filter(Boolean);
+
+      if (fadeTargets.length > 0) {
+        tl.fromTo(
+          fadeTargets,
+          { opacity: 0, y: 10 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power2.out",
+            clearProps: "transform,opacity",
+          },
+          "-=0.4"
+        );
+      }
+    });
+
+    // 2. Scroll direction detection on desktop
     let lastScroll = window.scrollY;
+    let ticking = false;
 
-    const navST = ScrollTrigger.create({
-      start: 0,
-      end: "max",
-      onUpdate: (self) => {
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
         if (isNavScrollingRef.current) return;
-
-        const currentScroll = self.scroll();
+        const currentScroll = window.scrollY;
         const delta = currentScroll - lastScroll;
 
-        // If scroll < 80px: always show
         if (currentScroll < 80) {
           showHeader();
-        } else if (self.direction === 1 && delta > 4) {
-          // Scrolling DOWN past 80px: hide
+        } else if (delta > 4) {
           hideHeader();
-        } else if (self.direction === -1 || delta < -4) {
-          // Scrolling UP (threshold >= 4px): show immediately
+        } else if (delta < -4) {
           showHeader();
         }
-
         lastScroll = currentScroll;
-      },
-    });
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     // 3. Force show listeners:
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -231,24 +224,13 @@ export default function Nav() {
     };
     window.addEventListener("mousemove", handleMouseMove);
 
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
-        ScrollTrigger.refresh();
-      });
-    }
-
-    const handleResize = () => {
-      ScrollTrigger.refresh();
-    };
-    window.addEventListener("resize", handleResize);
-
     return () => {
-      navST.kill();
+      cancelled = true;
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("popstate", handleHashChange);
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -350,17 +332,19 @@ export default function Nav() {
 
       if (mobileLinksRef.current) {
         const links = mobileLinksRef.current.children;
-        gsap.fromTo(
-          links,
-          { y: 60, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.5,
-            stagger: 0.08,
-            ease: "power3.out",
-          }
-        );
+        import("gsap").then(({ gsap }) => {
+          gsap.fromTo(
+            links,
+            { y: 60, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.5,
+              stagger: 0.08,
+              ease: "power3.out",
+            }
+          );
+        });
       }
     }, 50);
   };
@@ -472,6 +456,8 @@ export default function Nav() {
           height: "var(--header-h, 92px)",
           zIndex: 1000,
           background: "var(--bg, #F4EFE6)", // solid cream
+          transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform",
         }}
       >
         {/* DESKTOP 2-ROW GRID: Row 1 = [Logo, Nav, Button], Row 2 = [Line 1, Line 2, Line 3] */}
@@ -480,6 +466,7 @@ export default function Nav() {
           <div ref={logoContentRef} style={{ display: "flex", alignItems: "center" }}>
             <Link
               href="/"
+              prefetch={false}
               onClick={(e) => handleLinkClick(e, "/")}
               aria-label="HEGXAI - home"
               style={{
@@ -531,6 +518,7 @@ export default function Nav() {
                 <div key={link.label} style={{ display: "flex", alignItems: "center", gap: "24px" }}>
                   <Link
                     href={link.href}
+                    prefetch={false}
                     onClick={(e) => handleLinkClick(e, link.href)}
                     className={`header-nav-link ${isActive ? "is-active" : ""}`}
                     style={{
@@ -617,6 +605,7 @@ export default function Nav() {
           <div style={{ display: "flex", alignItems: "center" }}>
             <Link
               href="/"
+              prefetch={false}
               onClick={(e) => handleLinkClick(e, "/")}
               aria-label="HEGXAI - home"
               style={{
@@ -793,6 +782,7 @@ export default function Nav() {
               <div key={link.label} style={{ overflow: "hidden" }}>
                 <Link
                   href={link.href}
+                  prefetch={false}
                   onClick={(e) => handleLinkClick(e, link.href)}
                   style={{
                     display: "flex",

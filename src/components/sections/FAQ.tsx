@@ -1,12 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import { getContactHref, siteContent, FaqItem } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export interface FAQProps {
   items?: FaqItem[];
@@ -23,42 +19,83 @@ export default function FAQ({ items, sectionNumber, id = "faq" }: FAQProps = {})
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
 
-    gsap.fromTo(
-      sectionRef.current,
-      { opacity: 0 },
-      {
-        opacity: 1, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 85%", toggleActions: "play none none none" },
-      }
+    const el = sectionRef.current;
+    if (!el) return;
+
+    let st: { kill?: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+              st = gsap.fromTo(
+                el,
+                { opacity: 0 },
+                {
+                  opacity: 1,
+                  duration: 0.8,
+                  ease: "power3.out",
+                  scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none none" },
+                }
+              );
+            }
+          );
+        }
+      },
+      { rootMargin: "200px" }
     );
+
+    observer.observe(el);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      st?.kill?.();
+    };
   }, []);
 
   if (faqList.length === 0) return null;
 
   const toggle = (idx: number) => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = window.innerWidth < 768;
     const el = answerRefs.current[idx];
 
     if (openIdx === idx) {
-      if (el && !prefersReduced) {
-        gsap.to(el, { height: 0, opacity: 0, duration: 0.35, ease: "power3.inOut" });
+      if (el && !prefersReduced && !isMobile) {
+        import("gsap").then(({ gsap }) => {
+          gsap.to(el, { height: 0, opacity: 0, duration: 0.35, ease: "power3.inOut" });
+        });
       }
       setOpenIdx(null);
     } else {
       // Close previous
       if (openIdx !== null) {
         const prevEl = answerRefs.current[openIdx];
-        if (prevEl && !prefersReduced) {
-          gsap.to(prevEl, { height: 0, opacity: 0, duration: 0.3, ease: "power3.inOut" });
+        if (prevEl && !prefersReduced && !isMobile) {
+          import("gsap").then(({ gsap }) => {
+            gsap.to(prevEl, { height: 0, opacity: 0, duration: 0.3, ease: "power3.inOut" });
+          });
         }
       }
       setOpenIdx(idx);
-      if (el && !prefersReduced) {
-        gsap.set(el, { height: "auto", opacity: 1 });
-        const h = el.offsetHeight;
-        gsap.fromTo(el, { height: 0, opacity: 0 }, { height: h, opacity: 1, duration: 0.45, ease: "power3.out" });
+      if (el && !prefersReduced && !isMobile) {
+        import("gsap").then(({ gsap }) => {
+          gsap.set(el, { height: "auto", opacity: 1 });
+          const h = el.offsetHeight;
+          gsap.fromTo(el, { height: 0, opacity: 0 }, { height: h, opacity: 1, duration: 0.45, ease: "power3.out" });
+        });
       }
     }
   };

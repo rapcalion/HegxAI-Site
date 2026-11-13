@@ -9,38 +9,49 @@ export function useReveal(scopeRef?: React.RefObject<HTMLElement | null>) {
   useGSAP(
     () => {
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReduced) return;
+      const isMobile = window.innerWidth < 768;
+      if (prefersReduced || isMobile) return;
 
-      const container = scopeRef?.current || (typeof document !== "undefined" ? document.body : null);
-      if (!container) return;
+      const schedule = (cb: () => void) => {
+        if ("requestIdleCallback" in window) {
+          (window as Window).requestIdleCallback(cb);
+        } else {
+          setTimeout(cb, 1);
+        }
+      };
 
-      const lines = container.querySelectorAll<HTMLElement>("[data-reveal-line]");
-      if (!lines.length) return;
+      schedule(() => {
+        const container = scopeRef?.current || (typeof document !== "undefined" ? document.body : null);
+        if (!container) return;
 
-      lines.forEach((line) => {
-        gsap.fromTo(
-          line,
-          { y: "110%", opacity: 0 },
-          {
-            y: "0%",
-            opacity: 1,
-            duration: 1,
-            ease: "power3.out",
-            stagger: 0.08,
-            scrollTrigger: {
-              trigger: line,
-              start: () => window.innerWidth < 768 ? "top 95%" : "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
+        const lines = container.querySelectorAll<HTMLElement>("[data-reveal-line]");
+        if (!lines.length) return;
 
-      if (typeof document !== "undefined" && document.fonts) {
-        document.fonts.ready.then(() => {
-          ScrollTrigger.refresh();
+        lines.forEach((line) => {
+          gsap.fromTo(
+            line,
+            { y: "110%", opacity: 0 },
+            {
+              y: "0%",
+              opacity: 1,
+              duration: 1,
+              ease: "power3.out",
+              stagger: 0.08,
+              scrollTrigger: {
+                trigger: line,
+                start: () => window.innerWidth < 768 ? "top 95%" : "top 85%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
         });
-      }
+
+        if (typeof document !== "undefined" && document.fonts) {
+          document.fonts.ready.then(() => {
+            ScrollTrigger.refresh();
+          });
+        }
+      });
     },
     { scope: scopeRef || undefined }
   );

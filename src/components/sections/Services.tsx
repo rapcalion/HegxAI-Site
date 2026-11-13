@@ -1,15 +1,10 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import Marquee from "@/components/ui/Marquee";
 import { siteContent } from "@/content/site";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const SERVICES = [
   {
@@ -44,33 +39,65 @@ export default function Services() {
   const sectionRef = useRef<HTMLElement>(null);
   const rowsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  useGSAP(
-    () => {
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReduced) return;
+  useEffect(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) return;
 
-      const validRows = rowsRef.current.filter(Boolean) as HTMLDivElement[];
-      if (validRows.length === 0) return;
+    const el = sectionRef.current;
+    if (!el) return;
 
-      gsap.fromTo(
-        validRows,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.08,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 75%",
-            toggleActions: "play none none none",
-          },
+    let ctx: { revert: () => void } | undefined;
+    let observer: IntersectionObserver | null = null;
+    let cancelled = false;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer?.disconnect();
+          observer = null;
+
+          Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+            ([{ gsap }, { ScrollTrigger }]) => {
+              if (cancelled) return;
+              gsap.registerPlugin(ScrollTrigger);
+
+              ctx = gsap.context(() => {
+                const validRows = rowsRef.current.filter(Boolean) as HTMLDivElement[];
+                if (validRows.length === 0) return;
+
+                gsap.fromTo(
+                  validRows,
+                  { opacity: 0, y: 30 },
+                  {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    stagger: 0.08,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                      trigger: sectionRef.current,
+                      start: "top 75%",
+                      toggleActions: "play none none none",
+                    },
+                  }
+                );
+              }, sectionRef);
+            }
+          );
         }
-      );
-    },
-    { scope: sectionRef }
-  );
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(el);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      ctx?.revert();
+    };
+  }, []);
 
   return (
     <SectionFrame
@@ -262,6 +289,7 @@ export default function Services() {
         <div style={{ marginTop: "32px", display: "flex", justifyContent: "flex-start" }}>
           <Link
             href="/services"
+            prefetch={false}
             style={{
               display: "inline-flex",
               alignItems: "center",

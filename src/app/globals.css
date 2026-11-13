@@ -708,7 +708,6 @@ h2, h3 {
   50% {
     transform: scale(1.35);
     opacity: 1;
-    box-shadow: 0 0 10px var(--accent);
   }
 }
 
@@ -962,5 +961,22 @@ h2, h3 {
   .feature-float-b,
   .feature-float-b-mobile {
     animation: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-travel-packet {
+    display: none !important;
+  }
+  .feature-node-0,
+  .feature-node-1,
+  .feature-node-2,
+  .feature-node-3 {
+    animation: none !important;
+  }
+  .feature-node-0 {
+    border-color: var(--accent) !important;
+    background: rgba(81, 112, 255, 0.12) !important;
+    color: #ffffff !important;
   }
 }

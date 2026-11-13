@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 // Event feed cycling copies (no numbers / stats / brand names)
 const FEED_ITEMS = [
@@ -81,11 +77,29 @@ export default function HeroWorkflowCard() {
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     isReducedMotionRef.current = prefersReduced;
+    const isMobile = window.innerWidth < 768;
 
     const panel = panelRef.current;
-    if (!panel) return;
+    if (!panel || prefersReduced || isMobile) return;
 
-    if (!prefersReduced) {
+    let cancelled = false;
+
+    const schedule = (cb: () => void) => {
+      if ("requestIdleCallback" in window) {
+        (window as Window).requestIdleCallback(cb);
+      } else {
+        setTimeout(cb, 1);
+      }
+    };
+
+    schedule(async () => {
+      const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
+      if (cancelled) return;
+      gsap.registerPlugin(ScrollTrigger);
+
       // Scale 0.92 -> 1, y 60 -> 0 scroll scrub
       gsap.fromTo(
         panel,
@@ -102,6 +116,9 @@ export default function HeroWorkflowCard() {
           },
         }
       );
+
+      // On mobile, skip continuous idle loops
+      if (isMobile) return;
 
       // Outer glow breathing: opacity 0.2 <-> 0.4, 4s cycle (40% max per brand guidelines)
       if (glowRef.current) {
@@ -147,7 +164,11 @@ export default function HeroWorkflowCard() {
           });
         });
       }
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ─── 3. 3D TILT FOLLOWING MOUSE & 1.5x PARALLAX ON TILES ───────────
@@ -166,57 +187,65 @@ export default function HeroWorkflowCard() {
     const panel = panelRef.current;
     if (!container || !panel) return;
 
-    const quickRotateX = gsap.quickTo(panel, "rotationX", { duration: 0.5, ease: "power2.out" });
-    const quickRotateY = gsap.quickTo(panel, "rotationY", { duration: 0.5, ease: "power2.out" });
+    let cleanup: (() => void) | undefined;
 
-    // QuickTo for subtle parallax on floating chips
-    const toastSetters = [toastLeftRef.current, toastRightRef.current]
-      .filter(Boolean)
-      .map((toast) => ({
-        x: gsap.quickTo(toast, "x", { duration: 0.6, ease: "power2.out" }),
-        y: gsap.quickTo(toast, "y", { duration: 0.6, ease: "power2.out" }),
-      }));
+    import("gsap").then(({ gsap }) => {
+      const quickRotateX = gsap.quickTo(panel, "rotationX", { duration: 0.5, ease: "power2.out" });
+      const quickRotateY = gsap.quickTo(panel, "rotationY", { duration: 0.5, ease: "power2.out" });
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isVisibleRef.current) return;
-      const rect = panel.getBoundingClientRect();
-      const panelCenterX = rect.left + rect.width / 2;
-      const panelCenterY = rect.top + rect.height / 2;
+      // QuickTo for subtle parallax on floating chips
+      const toastSetters = [toastLeftRef.current, toastRightRef.current]
+        .filter(Boolean)
+        .map((toast) => ({
+          x: gsap.quickTo(toast, "x", { duration: 0.6, ease: "power2.out" }),
+          y: gsap.quickTo(toast, "y", { duration: 0.6, ease: "power2.out" }),
+        }));
 
-      // Normalized coordinates from -1 to 1 based on viewport distance
-      const normX = Math.max(-1, Math.min(1, (e.clientX - panelCenterX) / (window.innerWidth / 2)));
-      const normY = Math.max(-1, Math.min(1, (e.clientY - panelCenterY) / (window.innerHeight / 2)));
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isVisibleRef.current) return;
+        const rect = panel.getBoundingClientRect();
+        const panelCenterX = rect.left + rect.width / 2;
+        const panelCenterY = rect.top + rect.height / 2;
 
-      // Max 4 deg tilt
-      quickRotateY(normX * 4);
-      quickRotateX(-normY * 4);
+        // Normalized coordinates from -1 to 1 based on viewport distance
+        const normX = Math.max(-1, Math.min(1, (e.clientX - panelCenterX) / (window.innerWidth / 2)));
+        const normY = Math.max(-1, Math.min(1, (e.clientY - panelCenterY) / (window.innerHeight / 2)));
 
-      // Subtle parallax on chips
-      toastSetters.forEach((setters) => {
-        setters.x(normX * 10);
-        setters.y(normY * 10);
-      });
-    };
+        // Max 4 deg tilt
+        quickRotateY(normX * 4);
+        quickRotateX(-normY * 4);
 
-    const handleMouseLeave = () => {
-      quickRotateX(0);
-      quickRotateY(0);
-      toastSetters.forEach((setters) => {
-        setters.x(0);
-        setters.y(0);
-      });
-    };
+        // Subtle parallax on chips
+        toastSetters.forEach((setters) => {
+          setters.x(normX * 10);
+          setters.y(normY * 10);
+        });
+      };
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("mouseleave", handleMouseLeave, { passive: true });
+      const handleMouseLeave = () => {
+        quickRotateX(0);
+        quickRotateY(0);
+        toastSetters.forEach((setters) => {
+          setters.x(0);
+          setters.y(0);
+        });
+      };
+
+      window.addEventListener("mousemove", handleMouseMove, { passive: true });
+      window.addEventListener("mouseleave", handleMouseLeave, { passive: true });
+
+      cleanup = () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseleave", handleMouseLeave);
+      };
+    });
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
+      cleanup?.();
     };
   }, []);
 
-  // ─── 4. WORKFLOW GRAPH PACKET SIMULATOR & TICKER ────────────────────
+  // ─── 4. WORKFLOW GRAPH PACKET SIMULATOR & TICKER (GATED BY OBSERVER) ──
   useEffect(() => {
     if (isReducedMotionRef.current) return;
 
@@ -227,10 +256,16 @@ export default function HeroWorkflowCard() {
     let lastTime = performance.now();
     let feedIntervalTimer = 0;
     let progressTimer = 0;
+    const isMobileDevice = typeof window !== "undefined" && window.innerWidth < 768;
+    const minFrameInterval = isMobileDevice ? 1000 / 30 : 0; // 30fps cap on mobile
+    let lastRenderTime = 0;
 
-    const tickerCallback = (time: number) => {
+    const tickerCallback = (now: number) => {
       if (!isVisibleRef.current) return;
-      const now = time * 1000;
+      if (isMobileDevice && now - lastRenderTime < minFrameInterval) {
+        return;
+      }
+      lastRenderTime = now;
       const deltaSec = Math.min(0.1, (now - lastTime) / 1000);
       lastTime = now;
 
@@ -270,11 +305,14 @@ export default function HeroWorkflowCard() {
               pkt.duration = 0.9;
 
               if (agentHaloRef.current) {
-                gsap.fromTo(
-                  agentHaloRef.current,
-                  { opacity: 0.9, scale: 1.25, svgOrigin: "0 0" },
-                  { opacity: 0.1, scale: 1, duration: 0.35, ease: "power2.out" }
-                );
+                agentHaloRef.current.style.opacity = "0.9";
+                agentHaloRef.current.style.transform = "scale(1.25)";
+                setTimeout(() => {
+                  if (agentHaloRef.current) {
+                    agentHaloRef.current.style.opacity = "0.1";
+                    agentHaloRef.current.style.transform = "scale(1)";
+                  }
+                }, 200);
               }
             } else {
               const pt = pathEl.getPointAtLength(pkt.progress * totalLen);
@@ -295,11 +333,14 @@ export default function HeroWorkflowCard() {
 
               const actionNode = actionNodeRefs.current[pkt.outPathIdx];
               if (actionNode) {
-                gsap.fromTo(
-                  actionNode,
-                  { stroke: "var(--accent)", strokeWidth: 2, scale: 1.04, transformOrigin: "center" },
-                  { stroke: "rgba(255,255,255,0.14)", strokeWidth: 1, scale: 1, duration: 0.45, ease: "power2.out" }
-                );
+                actionNode.style.stroke = "var(--accent)";
+                actionNode.style.strokeWidth = "2";
+                setTimeout(() => {
+                  if (actionNode) {
+                    actionNode.style.stroke = "rgba(255,255,255,0.14)";
+                    actionNode.style.strokeWidth = "1";
+                  }
+                }, 350);
               }
 
               pushFeedItem();
@@ -327,36 +368,58 @@ export default function HeroWorkflowCard() {
       setProgressStep(currentSegment);
     };
 
-    gsap.ticker.add(tickerCallback);
+    let rafId: number | null = null;
+    let isRunning = false;
 
-    return () => {
-      gsap.ticker.remove(tickerCallback);
+    const tick = (now: number) => {
+      if (!isRunning) return;
+      tickerCallback(now);
+      rafId = requestAnimationFrame(tick);
     };
-  }, [pushFeedItem]);
 
-  // ─── 5. INTERSECTION OBSERVER & VISIBILITY ──────────────────────────
-  useEffect(() => {
+    const start = () => {
+      if (!isRunning) {
+        isRunning = true;
+        lastTime = performance.now();
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+
+    const stop = () => {
+      if (isRunning) {
+        isRunning = false;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+      }
+    };
+
     const target = containerRef.current;
     if (!target) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        isVisibleRef.current = entry.isIntersecting && !document.hidden;
+        const visible = entry.isIntersecting && !document.hidden;
+        isVisibleRef.current = visible;
+        if (visible) start();
+        else stop();
       },
       { rootMargin: "120px" }
     );
     observer.observe(target);
 
     const handleVisibilityChange = () => {
-      isVisibleRef.current = !document.hidden;
+      const visible = !document.hidden;
+      isVisibleRef.current = visible;
+      if (visible) start();
+      else stop();
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      stop();
       observer.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [pushFeedItem]);
 
   return (
     <div

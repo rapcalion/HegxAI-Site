@@ -1,61 +1,110 @@
 "use client";
 import { useEffect, useRef } from "react";
-import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useReveal } from "@/lib/useReveal";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function SmoothScrollProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
-  const lenisRef = useRef<Lenis | null>(null);
-
-  // Initialize line mask reveal for all [data-reveal] elements across sections
-  useReveal();
+  const lenisRef = useRef<unknown>(null);
 
   useEffect(() => {
-    // Respect reduced motion
+    // Respect reduced motion and mobile devices
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+    const isMobile =
+      window.innerWidth < 768 ||
+      window.matchMedia("(pointer: coarse)").matches;
 
-    if (prefersReduced) return;
+    if (prefersReduced || isMobile) return;
 
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: "vertical",
-      smoothWheel: true,
-      syncTouch: false,
-    });
+    let lenisInstance: { raf: (time: number) => void; on: (event: "scroll", cb: () => void) => void; destroy: () => void } | null = null;
+    let tickerRaf: ((time: number) => void) | null = null;
+    let cancelled = false;
 
-    lenisRef.current = lenis;
-    (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
+    const init = async () => {
+      const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
+        import("lenis"),
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
 
-    // Sync with GSAP ScrollTrigger
-    lenis.on("scroll", ScrollTrigger.update);
+      if (cancelled) return;
 
-    const raf = gsap.ticker.add((time: number) => {
-      lenis.raf(time * 1000);
-    });
+      gsap.registerPlugin(ScrollTrigger);
 
-    gsap.ticker.lagSmoothing(0);
-
-    // Refresh ScrollTrigger calculations after custom web fonts have fully loaded
-    if (typeof document !== "undefined" && document.fonts) {
-      document.fonts.ready.then(() => {
-        ScrollTrigger.refresh();
+      const lenis = new Lenis({
+        duration: 1.2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: "vertical",
+        smoothWheel: true,
+        syncTouch: false,
       });
-    }
+
+      lenisInstance = lenis;
+      lenisRef.current = lenis;
+      (window as unknown as { __lenis?: unknown }).__lenis = lenis;
+
+      lenis.on("scroll", ScrollTrigger.update);
+
+      tickerRaf = (time: number) => {
+        lenis.raf(time * 1000);
+      };
+      gsap.ticker.add(tickerRaf);
+      gsap.ticker.lagSmoothing(0);
+
+      // Line reveal for [data-reveal-line]
+      const lines = document.querySelectorAll<HTMLElement>("[data-reveal-line]");
+      if (lines.length > 0) {
+        lines.forEach((line) => {
+          gsap.fromTo(
+            line,
+            { y: "110%", opacity: 0 },
+            {
+              y: "0%",
+              opacity: 1,
+              duration: 1,
+              ease: "power3.out",
+              stagger: 0.08,
+              scrollTrigger: {
+                trigger: line,
+                start: "top 85%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      }
+
+      if (typeof document !== "undefined" && document.fonts) {
+        document.fonts.ready.then(() => {
+          ScrollTrigger.refresh();
+        });
+      }
+    };
+
+    const idleId =
+      "requestIdleCallback" in window
+        ? (window as Window).requestIdleCallback(() => { void init(); })
+        : setTimeout(() => { void init(); }, 1);
 
     return () => {
-      gsap.ticker.remove(raf);
-      delete (window as unknown as { __lenis?: Lenis }).__lenis;
-      lenis.destroy();
+      cancelled = true;
+      if ("cancelIdleCallback" in window && typeof idleId === "number") {
+        (window as Window).cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId as unknown as NodeJS.Timeout);
+      }
+      if (tickerRaf) {
+        import("gsap").then(({ gsap }) => {
+          if (tickerRaf) gsap.ticker.remove(tickerRaf);
+        });
+      }
+      if (lenisInstance) {
+        delete (window as unknown as { __lenis?: unknown }).__lenis;
+        lenisInstance.destroy();
+      }
     };
   }, []);
 

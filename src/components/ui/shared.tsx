@@ -1,11 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getSectionNumber } from "@/content/site";
 import StarShape from "@/components/ui/StarShape";
-
-gsap.registerPlugin(ScrollTrigger);
 export interface SectionBarProps {
   label: string;
   num?: string;
@@ -52,25 +48,40 @@ export function SectionBar({
     if (!el) return;
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
+    const isMobile = window.innerWidth < 768;
+    if (prefersReduced || isMobile) {
       el.style.clipPath = "inset(0 0% 0 0)";
       return;
     }
 
-    gsap.fromTo(
-      el,
-      { clipPath: "inset(0 100% 0 0)" },
-      {
-        clipPath: "inset(0 0% 0 0)",
-        duration: 0.7,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: el,
-          start: "top 88%",
-          toggleActions: "play none none none",
-        },
+    let st: { kill?: () => void } | undefined;
+    let cancelled = false;
+
+    Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+      ([{ gsap }, { ScrollTrigger }]) => {
+        if (cancelled) return;
+        gsap.registerPlugin(ScrollTrigger);
+        st = gsap.fromTo(
+          el,
+          { clipPath: "inset(0 100% 0 0)" },
+          {
+            clipPath: "inset(0 0% 0 0)",
+            duration: 0.7,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 88%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
       }
     );
+
+    return () => {
+      cancelled = true;
+      st?.kill?.();
+    };
   }, []);
 
   return (
@@ -203,36 +214,9 @@ interface ScrollRevealProps {
   delay?: number;
 }
 
-export function ScrollReveal({ children, className = "", delay = 0 }: ScrollRevealProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
-
-    gsap.fromTo(
-      el,
-      { opacity: 0, y: 40 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: el,
-          start: "top 88%",
-          toggleActions: "play none none none",
-        },
-      }
-    );
-  }, [delay]);
-
+export function ScrollReveal({ children, className = "" }: ScrollRevealProps) {
   return (
-    <div ref={ref} className={className} style={{ opacity: 0 }}>
+    <div className={className}>
       {children}
     </div>
   );

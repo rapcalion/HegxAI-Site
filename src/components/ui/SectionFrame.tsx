@@ -1,11 +1,6 @@
 "use client";
 
-import React, { useRef, useImperativeHandle } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger);
+import React, { useRef, useEffect, useImperativeHandle } from "react";
 
 export interface SectionFrameProps {
   children: React.ReactNode;
@@ -47,76 +42,91 @@ export const SectionFrame = React.forwardRef<HTMLElement, SectionFrameProps>(
       ? "var(--grid-square-dark, rgba(255, 255, 255, 0.85))"
       : "var(--grid-square, #141414)";
 
-    useGSAP(
-      () => {
-        const prefersReduced =
-          typeof window !== "undefined" &&
-          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    useEffect(() => {
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-        if (prefersReduced) return;
+      if (prefersReduced || isMobile) return;
 
-        const el = internalRef.current;
-        if (!el) return;
+      const el = internalRef.current;
+      if (!el) return;
 
-        const hLines = el.querySelectorAll(".section-h-line");
-        const vLines = el.querySelectorAll(".section-v-line");
-        const squares = el.querySelectorAll(".section-end-square");
+      let ctx: { revert: () => void } | undefined;
+      let cancelled = false;
 
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: el,
-            start: "top 85%",
-            once: true,
-          },
-        });
+      Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(
+        ([{ gsap }, { ScrollTrigger }]) => {
+          if (cancelled) return;
+          gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Horizontal lines draw outward from center to page edges (0.9s, power2.out)
-        if (hLines.length > 0) {
-          tl.fromTo(
-            hLines,
-            { scaleX: 0 },
-            {
-              scaleX: 1,
-              transformOrigin: "center",
-              duration: 0.9,
-              ease: "power2.out",
-            },
-            0
-          );
+          ctx = gsap.context(() => {
+            const hLines = el.querySelectorAll(".section-h-line");
+            const vLines = el.querySelectorAll(".section-v-line");
+            const squares = el.querySelectorAll(".section-end-square");
+
+            const tl = gsap.timeline({
+              scrollTrigger: {
+                trigger: el,
+                start: "top 85%",
+                once: true,
+              },
+            });
+
+            // 1. Horizontal lines draw outward from center to page edges (0.9s, power2.out)
+            if (hLines.length > 0) {
+              tl.fromTo(
+                hLines,
+                { scaleX: 0 },
+                {
+                  scaleX: 1,
+                  transformOrigin: "center",
+                  duration: 0.9,
+                  ease: "power2.out",
+                },
+                0
+              );
+            }
+
+            // 2. Vertical lines draw downward (scaleY from top, 1.1s, power2.out)
+            if (vLines.length > 0) {
+              tl.fromTo(
+                vLines,
+                { scaleY: 0 },
+                {
+                  scaleY: 1,
+                  transformOrigin: "top",
+                  duration: 1.1,
+                  ease: "power2.out",
+                },
+                0
+              );
+            }
+
+            // 3. End squares fade and scale in (0.25s) when the line reaches them
+            if (squares.length > 0) {
+              tl.fromTo(
+                squares,
+                { scale: 0, opacity: 0 },
+                {
+                  scale: 1,
+                  opacity: 1,
+                  duration: 0.25,
+                  ease: "power2.out",
+                },
+                0.7
+              );
+            }
+          }, el);
         }
+      );
 
-        // 2. Vertical lines draw downward (scaleY from top, 1.1s, power2.out)
-        if (vLines.length > 0) {
-          tl.fromTo(
-            vLines,
-            { scaleY: 0 },
-            {
-              scaleY: 1,
-              transformOrigin: "top",
-              duration: 1.1,
-              ease: "power2.out",
-            },
-            0
-          );
-        }
-
-        // 3. End squares fade and scale in (0.25s) when the line reaches them
-        if (squares.length > 0) {
-          tl.fromTo(
-            squares,
-            { scale: 0, opacity: 0 },
-            {
-              scale: 1,
-              opacity: 1,
-              duration: 0.25,
-              ease: "power2.out",
-            },
-            0.7
-          );
-        }
-      },
-      { scope: internalRef }
-    );
+      return () => {
+        cancelled = true;
+        ctx?.revert();
+      };
+    }, []);
 
     return (
       <section

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { gsap } from "gsap";
 import { SectionBar, SectionColumn } from "@/components/ui/shared";
 import SectionFrame from "@/components/ui/SectionFrame";
 import StarShape from "@/components/ui/StarShape";
@@ -18,28 +17,35 @@ export default function Features() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const isTransitioningRef = useRef(false);
 
-  // Mobile horizontal scroll tracking
+  // Mobile horizontal scroll tracking via IntersectionObserver (zero forced reflows)
   useEffect(() => {
     const el = carouselRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const children = Array.from(el.children);
-      const scrollCenter = el.scrollLeft + el.clientWidth / 2;
-      let closestIdx = 0;
-      let minDiff = Infinity;
-      children.forEach((child, i) => {
-        const c = child as HTMLElement;
-        const center = c.offsetLeft + c.offsetWidth / 2;
-        const diff = Math.abs(scrollCenter - center);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestIdx = i;
-        }
-      });
-      setMobileActive(closestIdx);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            const idxStr = (entry.target as HTMLElement).dataset.slideIdx;
+            if (idxStr !== undefined) {
+              setMobileActive(Number(idxStr));
+            }
+          }
+        });
+      },
+      {
+        root: el,
+        threshold: 0.5,
+      }
+    );
+
+    const children = Array.from(el.children);
+    children.forEach((child, i) => {
+      (child as HTMLElement).dataset.slideIdx = String(i);
+      observer.observe(child);
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   const scrollCarouselTo = (idx: number) => {
@@ -48,7 +54,7 @@ export default function Features() {
     const children = Array.from(el.children);
     const target = children[idx] as HTMLElement;
     if (target) {
-      el.scrollTo({ left: target.offsetLeft - el.offsetLeft, behavior: "smooth" });
+      target.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     }
     setMobileActive(idx);
   };
@@ -81,60 +87,62 @@ export default function Features() {
 
     isTransitioningRef.current = true;
 
-    const outgoingRight = rightPanelsRef.current[fromIdx];
-    const incomingRight = rightPanelsRef.current[targetIdx];
+    import("gsap").then(({ gsap }) => {
+      const outgoingRight = rightPanelsRef.current[fromIdx];
+      const incomingRight = rightPanelsRef.current[targetIdx];
 
-    // Ensure incoming panel is hidden before starting
-    if (incomingRight) {
-      gsap.set(incomingRight, { opacity: 0, visibility: "hidden", pointerEvents: "none" });
-    }
+      // Ensure incoming panel is hidden before starting
+      if (incomingRight) {
+        gsap.set(incomingRight, { opacity: 0, visibility: "hidden", pointerEvents: "none" });
+      }
 
-    // Step 1: Outgoing elements fully fade out (~0.2s)
-    if (outgoingRight) {
-      gsap.to(outgoingRight, {
-        opacity: 0,
-        y: -6,
-        duration: 0.2,
-        ease: "power2.in",
-        onComplete: () => {
-          outgoingRight.style.visibility = "hidden";
-          outgoingRight.style.pointerEvents = "none";
+      // Step 1: Outgoing elements fully fade out (~0.2s)
+      if (outgoingRight) {
+        gsap.to(outgoingRight, {
+          opacity: 0,
+          y: -6,
+          duration: 0.2,
+          ease: "power2.in",
+          onComplete: () => {
+            outgoingRight.style.visibility = "hidden";
+            outgoingRight.style.pointerEvents = "none";
 
-          // Rolling digits pager transition
-          if (digitsRef.current) {
-            gsap.to(digitsRef.current, {
-              y: -targetIdx * 16,
-              duration: 0.35,
-              ease: "power2.out",
-            });
-          }
-
-          // Step 2: Incoming elements fade in (~0.35s)
-          if (incomingRight) {
-            incomingRight.style.visibility = "visible";
-            incomingRight.style.pointerEvents = "auto";
-
-            gsap.fromTo(
-              incomingRight,
-              { opacity: 0, y: 6 },
-              {
-                opacity: 1,
-                y: 0,
+            // Rolling digits pager transition
+            if (digitsRef.current) {
+              gsap.to(digitsRef.current, {
+                y: -targetIdx * 16,
                 duration: 0.35,
                 ease: "power2.out",
-                onComplete: () => {
-                  isTransitioningRef.current = false;
-                },
-              }
-            );
-          } else {
-            isTransitioningRef.current = false;
-          }
-        },
-      });
-    } else {
-      isTransitioningRef.current = false;
-    }
+              });
+            }
+
+            // Step 2: Incoming elements fade in (~0.35s)
+            if (incomingRight) {
+              incomingRight.style.visibility = "visible";
+              incomingRight.style.pointerEvents = "auto";
+
+              gsap.fromTo(
+                incomingRight,
+                { opacity: 0, y: 6 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.35,
+                  ease: "power2.out",
+                  onComplete: () => {
+                    isTransitioningRef.current = false;
+                  },
+                }
+              );
+            } else {
+              isTransitioningRef.current = false;
+            }
+          },
+        });
+      } else {
+        isTransitioningRef.current = false;
+      }
+    });
   };
 
   return (

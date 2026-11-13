@@ -32,6 +32,7 @@ export default function LogoMark({
       alt={ariaHidden ? "" : alt}
       width={600}
       height={600}
+      sizes="40px"
       priority={priority}
       aria-hidden={ariaHidden ? "true" : undefined}
       className={className}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Inter_Tight, DM_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Inter_Tight, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SITE_URL } from "@/lib/site-url";
 import { siteContent } from "@/content/site";
 import JsonLd from "@/components/seo/JsonLd";
@@ -8,28 +8,26 @@ import "./globals.css";
 
 const interTight = Inter_Tight({
   subsets: ["latin"],
+  weight: ["500"],
   variable: "--font-display",
   display: "swap",
-});
-
-const anton = Anton({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-logo",
-  display: "swap",
+  preload: true,
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
+  weight: ["400"],
   variable: "--font-body",
   display: "swap",
+  preload: false,
 });
 
 const ibmMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["500"],
   variable: "--font-mono",
   display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -131,7 +129,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${interTight.variable} ${anton.variable} ${dmSans.variable} ${ibmMono.variable}`}
+      className={`${interTight.variable} ${dmSans.variable} ${ibmMono.variable}`}
     >
       <head>
         <JsonLd data={organizationJsonLd} />

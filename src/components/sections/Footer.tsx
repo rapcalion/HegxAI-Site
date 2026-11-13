@@ -115,7 +115,7 @@ export default function Footer() {
             </span>
             <nav aria-label="Pages navigation" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {PAGES_LINKS.map((link) => (
-                <Link key={link.label} href={link.href} className="footer-nav-link">
+                <Link key={link.label} href={link.href} prefetch={false} className="footer-nav-link">
                   <span>{link.label}</span>
                   <span className="link-arrow" aria-hidden="true">→</span>
                 </Link>
@@ -294,6 +294,7 @@ export default function Footer() {
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <Link
                 href="/privacy"
+                prefetch={false}
                 className="footer-legal-link"
                 style={{
                   fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
@@ -313,6 +314,7 @@ export default function Footer() {
               </span>
               <Link
                 href="/terms"
+                prefetch={false}
                 className="footer-legal-link"
                 style={{
                   fontFamily: "var(--ff-mono, 'IBM Plex Mono', monospace)",
